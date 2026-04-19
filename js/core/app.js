@@ -79,6 +79,11 @@ function initNavigation() {
       const user = await getUser();
       if (user) {
         try { await signOut(); } catch (e) { console.warn("Logout:", e.message); }
+        // Naviga a auth esplicitamente: onAuthChange potrebbe non scattare
+        // se la sessione è già scaduta o il signOut fallisce silenziosamente.
+        updateGlobalUI();
+        navigationHistory = ["auth"];
+        navigateTo("auth", false);
       } else {
         navigateTo("auth");
       }
@@ -87,8 +92,6 @@ function initNavigation() {
 }
 
 async function initApp() {
-  loadCardsFromRawData();
-
   renderHomeScreen();
   renderPlayScreen();
   renderDeckBuilderScreen();
@@ -126,7 +129,10 @@ async function initApp() {
 
   if (typeof initSporeCanvas === "function") initSporeCanvas();
 
-  syncCardsFromSupabase();
+  // Carica le carte da Supabase, poi ri-renderizza il deckbuilder
+  // (al primo render CardDatabase era ancora vuoto).
+  await syncCardsFromSupabase();
+  renderDeckBuilderScreen();
 }
 
 window.onload = initApp;

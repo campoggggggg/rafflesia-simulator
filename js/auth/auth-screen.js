@@ -93,7 +93,8 @@ function renderAuthScreen() {
     } catch (err) {
       msg.className   = "auth-msg error";
       msg.textContent = err.message;
-      btn.disabled    = false;
+    } finally {
+      btn.disabled = false;
     }
   };
 

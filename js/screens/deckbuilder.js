@@ -23,7 +23,7 @@ let selectedCardId = null;
 // Infinity è il valore "infinito" di JS: usato per le Basic che
 // non hanno limite. Il confronto qty > Infinity è sempre false.
 function getMaxCopies(card) {
-  if (card.rarity === "Basic")     return Infinity;
+  if (card.type === "Territory")   return Infinity;
   if (card.rarity === "Legendary") return 1;
   return 2;
 }
@@ -66,18 +66,18 @@ function renderDeckBuilderScreen() {
           <div class="row" style="margin-top: 12px;">
             <select id="colorFilter" class="select">
               <option value="all">Tutti i colori</option>
-              <option value="Blu">Blu</option>
-              <option value="Verde">Verde</option>
-              <option value="Black">Black</option>
-              <option value="Red">Red</option>
-              <option value="Colorless">Colorless</option>
+              <option value="blue">Blue</option>
+              <option value="green">Green</option>
+              <option value="red">Red</option>
+              <option value="black">Black</option>
+              <option value="colorless">Colorless</option>
             </select>
 
             <select id="typeFilter" class="select">
               <option value="all">Tutti i tipi</option>
               <option value="Minion">Minion</option>
-              <option value="Sudden Spell">Sudden Spell</option>
-              <option value="Conjured Spell">Conjured Spell</option>
+              <option value="Spell">Spell</option>
+              <option value="Quest">Quest</option>
               <option value="Territory">Territory</option>
             </select>
 
@@ -85,7 +85,6 @@ function renderDeckBuilderScreen() {
               <option value="all">Tutte le rarità</option>
               <option value="Legendary">Legendary</option>
               <option value="Normal">Normal</option>
-              <option value="Basic">Basic</option>
             </select>
           </div>
 
@@ -292,7 +291,7 @@ function getFilteredCards() {
     const matchesCommanderRules = !commander ||
       card.type === "Territory"         ||
       card.color === commander.color    ||
-      card.color === "Colorless";
+      card.color === "colorless";
 
     return matchesSearch && matchesColor && matchesType && matchesRarity && matchesCommanderRules;
   });
@@ -464,7 +463,7 @@ function renderCardPreview() {
         deckCard &&
         deckCard.id !== card.id &&             // il comandante non può stare anche nel main
         deckCard.type !== "Territory" &&
-        (deckCard.color === card.color || deckCard.color === "Colorless")
+        (deckCard.color === card.color || deckCard.color === "colorless")
       );
     });
 
@@ -508,7 +507,7 @@ function canAddCardToDeck(deck, card) {
   if (deck.commanderId && card.id === deck.commanderId) return false;
 
   // Blocca carte fuori dall'identità colore del comandante
-  if (commander && card.color !== commander.color && card.color !== "Colorless") return false;
+  if (commander && card.color !== commander.color && card.color !== "colorless") return false;
 
   if (deck.cards.length >= 29) return false;
 
@@ -663,7 +662,7 @@ function renderDeckValidation() {
       // Cerca carte nel main deck con colore diverso dal comandante
       const invalidMainDeckColors = deck.cards.filter(cardId => {
         const card = CardDatabase.find(c => c.id === cardId);
-        return card && card.color !== commander.color && card.color !== "Colorless";
+        return card && card.color !== commander.color && card.color !== "colorless";
       });
       if (invalidMainDeckColors.length > 0) {
         issues.push("Il main deck contiene carte fuori dall'identità di colore del comandante.");

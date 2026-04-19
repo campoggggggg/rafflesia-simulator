@@ -1,45 +1,51 @@
 /* ══════════════════════════════════════════════════════════════
-   Rafflesia Simulator — Dark Organic Horror Theme
-   Palette: Bordeaux #3D0C11 | Verde Necrotico #1A2E0A | Bone #D4C5A9
-   Font: Cinzel Decorative (titoli) + IM Fell English (corpo)
+   Rafflesia Simulator — Medieval Grimoire Theme
+   Inspiration: Slay the Spire · alchemical manuscripts · illuminated tomes
+   Palette: Ink black | Candlelight gold #C9A84C | Dried blood #7A1515
+   Fonts: UnifrakturMaguntia (display) · Cinzel Decorative (headings) · IM Fell English (body)
    ══════════════════════════════════════════════════════════════ */
 
-/* ── Palette (tema dark default) ─────────────────────────── */
+/* ── Palette ──────────────────────────────────────────────── */
 :root {
-  --bg-deep:        #0a0206;
-  --bg-main:        #3D0C11;
-  --bg-surface:     #180508;
-  --bg-panel:       #120306;
-  --bg-card:        #160407;
-  --accent:         #1A2E0A;
-  --accent-mid:     #243d0e;
-  --accent-bright:  #3a5a10;
-  --bone:           #D4C5A9;
-  --bone-dim:       #8a7f6c;
-  --bone-faint:     rgba(212, 197, 169, 0.12);
-  --border:         #4a1c22;
-  --border-green:   #2a4010;
-  --error:          #c0392b;
-  --success:        #5db880;
-  --shadow:         rgba(0, 0, 0, 0.75);
+  --bg-deep:          #0c0906;
+  --bg-main:          #13100a;
+  --bg-surface:       #1a150d;
+  --bg-panel:         #120e08;
+  --bg-card:          #181208;
+
+  --parchment:        #e8d5a3;
+  --parchment-dim:    #9a865e;
+  --parchment-faint:  rgba(232, 213, 163, 0.10);
+
+  --gold:             #C9A84C;
+  --gold-dim:         #7d641e;
+  --gold-bright:      #e8c460;
+  --gold-glow:        rgba(201, 168, 76, 0.28);
+
+  --blood:            #5e1010;
+  --blood-mid:        #8a1c1c;
+  --blood-bright:     #b03030;
+
+  --border:           #3a2810;
+  --border-gold:      #5a4418;
+
+  --error:            #c0392b;
+  --success:          #7ab87a;
+  --shadow:           rgba(0, 0, 0, 0.85);
 }
 
-/* ── Tema Light ───────────────────────────────────────────── */
-/* Tutte le variabili vengono sovrascritte: contrasto WCAG AA garantito */
+/* ── Tema Light (pergamena diurna) ───────────────────────── */
 body.theme-light {
-  --bg-deep:        #f0e8d8;
-  --bg-main:        #e8dcc8;
-  --bg-surface:     #ddd0b8;
-  --bg-panel:       #cfc2a8;
-  --bg-card:        #e4d8c4;
-  --accent:         #1e3d08;
-  --accent-mid:     #2a5010;
-  --accent-bright:  #3a6a18;
-  --bone:           #1a0c04;
-  --bone-dim:       #4a3820;
-  --bone-faint:     rgba(26, 12, 4, 0.08);
-  --border:         #b09060;
-  --border-green:   #5a8030;
+  --bg-deep:          #f2e4c0;
+  --bg-main:          #ead8a8;
+  --bg-surface:       #dfc990;
+  --bg-panel:         #d4bc80;
+  --bg-card:          #e8d8a8;
+  --parchment:        #180c04;
+  --parchment-dim:    #5a3820;
+  --parchment-faint:  rgba(24, 12, 4, 0.08);
+  --border:           #a07840;
+  --border-gold:      #c09840;
 }
 
 /* ── Reset & Base ─────────────────────────────────────────── */
@@ -50,13 +56,13 @@ body {
   font-family: 'IM Fell English', Georgia, serif;
   font-size: 16px;
   line-height: 1.55;
-  background: var(--bg-deep);
-  color: var(--bone);
-  /* Sfondo stratificato: gradiente + macchie organiche statiche */
+  background-color: var(--bg-deep);
+  color: var(--parchment);
+  /* Luce di candela al centro, ombre di sangue negli angoli */
   background-image:
-    radial-gradient(ellipse 60% 40% at 15% 85%, rgba(26,46,10,0.18) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 60% at 85% 15%, rgba(61,12,17,0.25) 0%, transparent 55%),
-    radial-gradient(ellipse 80% 50% at 50% 50%, rgba(18,3,7,0.55) 0%, transparent 75%);
+    radial-gradient(ellipse 80% 55% at 50% 42%, rgba(201,168,76,0.05) 0%, transparent 62%),
+    radial-gradient(ellipse 55% 48% at 12% 92%, rgba(110,21,21,0.16) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 55% at 90% 10%, rgba(110,21,21,0.11) 0%, transparent 58%);
 }
 
 button, input, select, textarea { font: inherit; }
@@ -72,29 +78,40 @@ button, input, select, textarea { font: inherit; }
 /* ── Sidebar ──────────────────────────────────────────────── */
 #sidebar {
   width: 260px;
-  background: var(--bg-panel);
+  background-color: var(--bg-panel);
+  /* rigature sottili come un libro rilegato */
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 30px,
+    rgba(201,168,76,0.025) 30px,
+    rgba(201,168,76,0.025) 31px
+  );
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   padding: 22px 18px;
-  position: relative;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  flex-shrink: 0;
 }
 
-/* Bordo laterale con sfumatura verde-bordeaux */
+/* Bordo dorato sul lato destro — foglia d'oro */
 #sidebar::after {
   content: '';
   position: absolute;
-  top: 10%;
+  top: 8%;
   right: -1px;
-  width: 2px;
-  height: 80%;
+  width: 1px;
+  height: 84%;
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    var(--border) 25%,
-    var(--accent-bright) 55%,
-    var(--border) 80%,
+    var(--gold-dim) 20%,
+    var(--gold)     50%,
+    var(--gold-dim) 80%,
     transparent 100%
   );
   pointer-events: none;
@@ -113,77 +130,82 @@ button, input, select, textarea { font: inherit; }
   height: auto;
   margin-bottom: 10px;
   object-fit: contain;
-  filter: drop-shadow(0 0 14px rgba(212,197,169,0.25))
-          drop-shadow(0 2px 6px rgba(0,0,0,0.8));
+  filter: drop-shadow(0 0 12px rgba(201,168,76,0.22))
+          drop-shadow(0 2px 8px rgba(0,0,0,0.90));
   transition: transform 0.4s ease, filter 0.4s ease;
 }
 
 .logo-img:hover {
   transform: scale(1.05);
-  filter: drop-shadow(0 0 22px rgba(212,197,169,0.45))
-          drop-shadow(0 0 8px rgba(61,12,17,0.9));
+  filter: drop-shadow(0 0 24px rgba(201,168,76,0.55))
+          drop-shadow(0 0 8px rgba(201,168,76,0.22));
 }
 
 .logo p {
   margin: 4px 0 0;
-  color: var(--bone-dim);
-  font-size: 13px;
+  color: var(--parchment-dim);
+  font-size: 12px;
   font-style: italic;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.10em;
 }
 
 /* ── Navigazione ──────────────────────────────────────────── */
 .menu {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   margin-top: 28px;
 }
 
 .nav-btn {
-  background: rgba(26,46,10,0.12);
-  color: var(--bone);
+  background: rgba(201,168,76,0.04);
+  color: var(--parchment);
   border: 1px solid var(--border);
-  padding: 12px 16px;
+  padding: 11px 16px;
   text-align: left;
-  border-radius: 8px;
+  border-radius: 3px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.22s ease;
   position: relative;
   overflow: hidden;
+  letter-spacing: 0.04em;
 }
 
-/* Accento sinistro verde-bordeaux */
+/* Linea dorata sinistra — segnalibro */
 .nav-btn::before {
   content: '';
   position: absolute;
   left: 0; top: 0;
-  width: 3px; height: 100%;
-  background: linear-gradient(to bottom, var(--border), var(--accent-bright));
+  width: 2px; height: 100%;
+  background: linear-gradient(to bottom, transparent, var(--gold), transparent);
   opacity: 0;
-  transition: opacity 0.25s;
+  transition: opacity 0.22s;
 }
 
 .nav-btn:hover {
-  background: rgba(26,46,10,0.30);
-  border-color: var(--accent-bright);
-  box-shadow: 0 0 12px rgba(26,46,10,0.28), inset 0 0 8px rgba(26,46,10,0.10);
+  background: rgba(201,168,76,0.10);
+  border-color: var(--gold-dim);
+  color: var(--gold-bright);
 }
 
 .nav-btn:hover::before { opacity: 1; }
 
 .nav-btn.active {
-  background: rgba(26,46,10,0.45);
-  border-color: var(--accent-bright);
-  box-shadow: 0 0 16px rgba(26,46,10,0.38);
+  background: rgba(201,168,76,0.16);
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  box-shadow: 0 0 12px rgba(201,168,76,0.10), inset 0 0 6px rgba(201,168,76,0.05);
 }
 
 .nav-btn.active::before { opacity: 1; }
 
 /* ── Sidebar footer ───────────────────────────────────────── */
 .sidebar-footer {
-  color: var(--bone-dim);
-  font-size: 14px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  color: var(--parchment-dim);
+  font-size: 13px;
   font-style: italic;
 }
 
@@ -191,7 +213,7 @@ button, input, select, textarea { font: inherit; }
 #main-content {
   flex: 1;
   padding: 32px 36px;
-  background: linear-gradient(150deg, var(--bg-surface) 0%, var(--bg-deep) 100%);
+  background: linear-gradient(160deg, var(--bg-surface) 0%, var(--bg-deep) 100%);
   min-height: 100vh;
 }
 
@@ -199,143 +221,167 @@ button, input, select, textarea { font: inherit; }
 .screen        { display: none; }
 .screen.active { display: block; }
 
+/* ── Animazioni ───────────────────────────────────────────── */
+@keyframes candleFlicker {
+  0%,  100% { box-shadow: 0 0  8px var(--gold-glow), 0 2px 12px rgba(0,0,0,0.55); }
+  25%        { box-shadow: 0 0 16px var(--gold-glow), 0 2px 18px rgba(0,0,0,0.55); }
+  55%        { box-shadow: 0 0  5px rgba(201,168,76,0.16), 0 2px 10px rgba(0,0,0,0.55); }
+  80%        { box-shadow: 0 0 14px var(--gold-glow), 0 2px 16px rgba(0,0,0,0.55); }
+}
+
+@keyframes titleGlow {
+  0%,  100% { text-shadow: 0 2px 6px rgba(0,0,0,0.95), 0 0 28px rgba(201,168,76,0.14), 0 0 55px rgba(201,168,76,0.06); }
+  50%        { text-shadow: 0 2px 6px rgba(0,0,0,0.95), 0 0 42px rgba(201,168,76,0.30), 0 0 80px rgba(201,168,76,0.12); }
+}
+
 /* ── Tipografia ───────────────────────────────────────────── */
 .page-title {
   margin-top: 0;
-  font-family: 'Cinzel Decorative', 'Palatino Linotype', serif;
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--bone);
-  letter-spacing: 0.05em;
-  /* Effetto inchiostro scuro: ombra doppia verso il basso */
-  text-shadow:
-    0 2px 5px rgba(61,12,17,0.9),
-    0 5px 15px rgba(0,0,0,0.6),
-    0 0 35px rgba(212,197,169,0.06);
+  font-family: 'UnifrakturMaguntia', 'Cinzel Decorative', serif;
+  font-size: 34px;
+  font-weight: 400;
+  color: var(--gold);
+  letter-spacing: 0.03em;
+  animation: titleGlow 5s ease-in-out infinite;
 }
 
 .page-subtitle {
-  color: var(--bone-dim);
-  margin-top: -6px;
+  color: var(--parchment-dim);
+  margin-top: -4px;
   margin-bottom: 24px;
   font-style: italic;
 }
 
 .muted {
-  color: var(--bone-dim);
+  color: var(--parchment-dim);
   font-style: italic;
 }
 
 /* ── Card Panel ───────────────────────────────────────────── */
+/* Ornamento agli angoli: tecnica background-image multiplo */
 .card-panel {
-  background: var(--bg-card);
+  background-color: var(--bg-card);
+  background-image:
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    left  / 18px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    left  / 1px 18px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    right / 18px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    right / 1px 18px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom left  / 18px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom left  / 1px 18px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom right / 18px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom right / 1px 18px no-repeat;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 5px;
   padding: 20px;
   margin-bottom: 20px;
   position: relative;
   box-shadow:
-    0 4px 22px rgba(0,0,0,0.55),
-    inset 0 1px 0 rgba(212,197,169,0.04);
+    0 4px 26px rgba(0,0,0,0.70),
+    inset 0 1px 0 rgba(201,168,76,0.05);
 }
 
-/* Texture noise sottile simulata con pattern SVG inline */
+/* Grana pergamena calda */
 .card-panel::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: 0.022;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.68' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.52 0 0 0 0 0.38 0 0 0 0 0.16 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
   pointer-events: none;
 }
 
-/* ── Pulsanti principali ──────────────────────────────────── */
+/* ── Pulsanti ─────────────────────────────────────────────── */
 .primary-btn,
 .secondary-btn,
 .danger-btn {
-  border-radius: 8px;
-  padding: 10px 16px;
+  border-radius: 3px;
+  padding: 10px 18px;
   cursor: pointer;
-  transition: all 0.28s ease;
+  transition: all 0.25s ease;
   font-family: 'IM Fell English', serif;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
 }
 
+/* Primary: cera sigillante dorata */
 .primary-btn {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-mid) 100%);
-  color: var(--bone);
-  border: 1px solid var(--accent-bright);
-  box-shadow: 0 2px 10px rgba(26,46,10,0.30);
+  background: linear-gradient(160deg, #201708 0%, #2c1e0a 100%);
+  color: var(--gold);
+  border: 1px solid var(--gold-dim);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.60), inset 0 1px 0 rgba(201,168,76,0.09);
 }
 
 .primary-btn:hover {
-  animation: organicPulse 1.8s ease-in-out infinite;
-  box-shadow: 0 0 20px rgba(26,46,10,0.55);
+  animation: candleFlicker 1.8s ease-in-out infinite;
+  border-color: var(--gold);
+  color: var(--gold-bright);
+}
+
+.primary-btn:disabled {
+  opacity: 0.40;
+  cursor: not-allowed;
+  animation: none;
 }
 
 .secondary-btn {
-  background: rgba(61,12,17,0.38);
-  color: var(--bone);
+  background: rgba(58,40,16,0.35);
+  color: var(--parchment);
   border: 1px solid var(--border);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.28);
 }
 
 .secondary-btn:hover {
-  background: rgba(61,12,17,0.58);
-  border-color: var(--bone-dim);
+  background: rgba(58,40,16,0.60);
+  border-color: var(--parchment-dim);
+}
+
+.secondary-btn:disabled {
+  opacity: 0.40;
+  cursor: not-allowed;
 }
 
 .danger-btn {
-  background: linear-gradient(135deg, #5a0f0f 0%, #8a1c1c 100%);
-  color: var(--bone);
-  border: 1px solid #b03030;
-  box-shadow: 0 2px 8px rgba(80,0,0,0.4);
+  background: linear-gradient(160deg, var(--blood) 0%, var(--blood-mid) 100%);
+  color: var(--parchment);
+  border: 1px solid var(--blood-bright);
+  box-shadow: 0 2px 8px rgba(90,0,0,0.50);
 }
 
 .danger-btn:hover {
-  box-shadow: 0 0 18px rgba(140,0,0,0.42);
+  box-shadow: 0 0 18px rgba(180,0,0,0.42);
+  border-color: #d04040;
 }
 
-/* Nasconde i vecchi pulsanti "← Indietro" ovunque */
+/* Nasconde i pulsanti "← Indietro" */
 .back-btn { display: none !important; }
-
-/* Hover organico: pulsazione lenta con glow verde */
-@keyframes organicPulse {
-  0%,  100% { transform: scale(1);    box-shadow: 0 0 10px rgba(26,46,10,0.30); }
-  50%        { transform: scale(1.02); box-shadow: 0 0 24px rgba(26,46,10,0.70), 0 0 5px rgba(212,197,169,0.12); }
-}
 
 /* ── Pulsante Home circolare (medaglione) ─────────────────── */
 .home-btn-circle {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: radial-gradient(circle at 38% 38%, var(--accent-mid), var(--accent));
-  border: 2px solid var(--bone);
-  color: var(--bone);
+  background: radial-gradient(circle at 38% 35%, #2e2008, #1a1004);
+  border: 2px solid var(--gold-dim);
+  color: var(--gold);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   box-shadow:
-    0 0 0 3px rgba(212,197,169,0.14),
-    0 4px 14px rgba(0,0,0,0.55),
-    inset 0 1px 0 rgba(212,197,169,0.08);
+    0 0 0 3px rgba(201,168,76,0.10),
+    0 4px 14px rgba(0,0,0,0.70),
+    inset 0 1px 0 rgba(201,168,76,0.10);
   transition: all 0.3s ease;
 }
 
 .home-btn-circle:hover {
-  transform: scale(1.12);
-  border-color: rgba(212,197,169,0.85);
+  transform: scale(1.10);
+  border-color: var(--gold);
   box-shadow:
-    0 0 0 4px rgba(212,197,169,0.28),
-    0 6px 22px rgba(26,46,10,0.65),
-    inset 0 1px 0 rgba(212,197,169,0.18);
+    0 0 0 4px rgba(201,168,76,0.22),
+    0 6px 22px rgba(201,168,76,0.30),
+    inset 0 1px 0 rgba(201,168,76,0.18);
 }
 
-/* Riga con il pulsante home a inizio schermata */
 .topbar-row {
   display: flex;
   align-items: center;
@@ -346,9 +392,9 @@ button, input, select, textarea { font: inherit; }
 /* ── Input e Select ───────────────────────────────────────── */
 .input, .select {
   background: var(--bg-deep);
-  color: var(--bone);
+  color: var(--parchment);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 10px 12px;
   outline: none;
   transition: border-color 0.22s, box-shadow 0.22s;
@@ -356,13 +402,12 @@ button, input, select, textarea { font: inherit; }
 }
 
 .input:focus, .select:focus {
-  border-color: var(--accent-bright);
-  box-shadow: 0 0 10px rgba(26,46,10,0.38);
+  border-color: var(--gold-dim);
+  box-shadow: 0 0 10px rgba(201,168,76,0.20);
 }
 
-/* Placeholder in bone semitrasparente, corsivo */
 .input::placeholder {
-  color: rgba(212,197,169,0.32);
+  color: rgba(232,213,163,0.26);
   font-style: italic;
 }
 
@@ -373,7 +418,7 @@ button, input, select, textarea { font: inherit; }
   align-items: center;
   gap: 20px;
   padding: 14px 0;
-  border-bottom: 1px solid rgba(74,28,34,0.35);
+  border-bottom: 1px solid rgba(58,40,16,0.50);
 }
 
 .setting-row:last-child { border-bottom: none; }
@@ -406,35 +451,45 @@ button, input, select, textarea { font: inherit; }
   gap: 20px;
 }
 
-/* ── Big Action Buttons (schermata Home) ──────────────────── */
+/* ── Big Action Buttons (Home screen) ────────────────────── */
 .big-action {
   width: 100%;
   min-height: 145px;
-  border-radius: 12px;
+  border-radius: 5px;
   border: 1px solid var(--border);
-  background: linear-gradient(135deg, var(--bg-card) 0%, rgba(26,46,10,0.08) 100%);
-  color: var(--bone);
+  background-color: var(--bg-card);
+  background-image:
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    left  / 14px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    left  / 1px 14px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    right / 14px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    right / 1px 14px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom left  / 14px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom left  / 1px 14px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom right / 14px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom right / 1px 14px no-repeat,
+    linear-gradient(140deg, transparent 0%, rgba(58,40,16,0.14) 100%);
+  color: var(--parchment);
   cursor: pointer;
   text-align: left;
   padding: 22px;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.42);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.60);
 }
 
 .big-action::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, transparent 50%, rgba(26,46,10,0.18));
+  background: linear-gradient(140deg, transparent 40%, rgba(201,168,76,0.07));
   opacity: 0;
   transition: opacity 0.3s;
 }
 
 .big-action:hover {
-  border-color: var(--accent-bright);
-  box-shadow: 0 6px 26px rgba(26,46,10,0.38), 0 0 0 1px rgba(26,46,10,0.18);
+  border-color: var(--gold-dim);
+  box-shadow: 0 6px 26px rgba(201,168,76,0.14), 0 0 0 1px rgba(201,168,76,0.07);
   transform: translateY(-2px);
 }
 
@@ -445,7 +500,8 @@ button, input, select, textarea { font: inherit; }
   margin-bottom: 10px;
   font-family: 'Cinzel Decorative', serif;
   font-size: 20px;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.55);
+  color: var(--gold);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.80);
 }
 
 /* ── Auth Screen ──────────────────────────────────────────── */
@@ -456,27 +512,28 @@ button, input, select, textarea { font: inherit; }
 }
 
 .auth-tab {
-  background: rgba(61,12,17,0.38);
-  color: var(--bone-dim);
+  background: rgba(58,40,16,0.28);
+  color: var(--parchment-dim);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 3px;
   padding: 10px 24px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.22s ease;
   font-family: 'IM Fell English', serif;
+  letter-spacing: 0.04em;
 }
 
 .auth-tab.active {
-  background: var(--accent);
-  color: var(--bone);
-  border-color: var(--accent-bright);
-  box-shadow: 0 0 14px rgba(26,46,10,0.42);
+  background: rgba(201,168,76,0.12);
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  box-shadow: 0 0 14px rgba(201,168,76,0.14);
 }
 
 .auth-msg {
   font-size: 13px;
   margin: 0;
-  color: var(--bone-dim);
+  color: var(--parchment-dim);
   font-style: italic;
 }
 
@@ -488,18 +545,18 @@ button, input, select, textarea { font: inherit; }
   display: inline-block;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(26,46,10,0.28);
-  color: var(--bone);
+  background: rgba(201,168,76,0.10);
+  color: var(--gold);
   font-size: 12px;
-  border: 1px solid var(--border-green);
+  border: 1px solid var(--gold-dim);
 }
 
-/* ── Game Card (carta fisica del gioco) ───────────────────── */
+/* ── Game Card (carta fisica) ─────────────────────────────── */
 .game-card {
-  background: #f4f1e8;
-  color: #151515;
-  border: 2px solid #2b2b2b;
-  border-radius: 12px;
+  background: #1e1508;
+  color: var(--parchment);
+  border: 2px solid var(--gold-dim);
+  border-radius: 8px;
   padding: 12px;
   min-height: 180px;
   display: flex;
@@ -519,9 +576,9 @@ button, input, select, textarea { font: inherit; }
 
 /* ── Deck Item ────────────────────────────────────────────── */
 .deck-item {
-  background: rgba(61,12,17,0.38);
+  background: rgba(58,40,16,0.28);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 10px 12px;
 }
 
@@ -555,14 +612,14 @@ button, input, select, textarea { font: inherit; }
   margin-top: 10px;
 }
 
-/* ── Scrollbar custom ─────────────────────────────────────── */
+/* ── Scrollbar custom (dorata) ────────────────────────────── */
 ::-webkit-scrollbar       { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg-deep); }
 ::-webkit-scrollbar-thumb {
-  background: var(--bone-dim);
-  border-radius: 3px;
+  background: var(--gold-dim);
+  border-radius: 2px;
 }
-::-webkit-scrollbar-thumb:hover { background: var(--bone); }
+::-webkit-scrollbar-thumb:hover { background: var(--gold); }
 
 .collection-grid {
   display: grid;
@@ -588,51 +645,62 @@ button, input, select, textarea { font: inherit; }
   width: 100%;
   max-width: 95px;
   height: auto;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid var(--border);
   display: block;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s;
 }
 
 .card-image:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.55), 0 0 8px rgba(26,46,10,0.30);
+  transform: scale(1.06);
+  border-color: var(--gold-dim);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.70), 0 0 12px rgba(201,168,76,0.20);
 }
 
 .collection-card-image { cursor: pointer; }
 
 .collection-card-image.selected {
-  outline: 3px solid var(--accent-bright);
+  outline: 2px solid var(--gold);
   outline-offset: 2px;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .card-hint {
   margin-top: 8px;
   font-size: 12px;
-  color: var(--bone-dim);
+  color: var(--parchment-dim);
   font-style: italic;
 }
 
 .card-preview-box {
-  background: var(--bg-card);
+  background-color: var(--bg-card);
+  background-image:
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    left  / 18px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    left  / 1px 18px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    right / 18px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    right / 1px 18px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom left  / 18px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom left  / 1px 18px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom right / 18px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom right / 1px 18px no-repeat;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 5px;
   padding: 20px;
 }
 
 .card-preview-image {
   width: 100%;
   max-width: 280px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
+  border-radius: 8px;
+  border: 1px solid var(--border-gold);
   display: block;
   margin: 0 auto 16px;
+  box-shadow: 0 4px 22px rgba(0,0,0,0.70), 0 0 8px rgba(201,168,76,0.10);
 }
 
 .card-preview-placeholder {
-  color: var(--bone-dim);
+  color: var(--parchment-dim);
   font-style: italic;
 }
 
@@ -657,7 +725,7 @@ button, input, select, textarea { font: inherit; }
   gap: 12px;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(74,28,34,0.28);
+  border-bottom: 1px solid rgba(58,40,16,0.45);
 }
 
 .deck-card-row:last-child { border-bottom: none; }
@@ -683,9 +751,18 @@ button, input, select, textarea { font: inherit; }
 }
 
 .play-mode-box {
-  background: var(--bg-card);
+  background-color: var(--bg-card);
+  background-image:
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    left  / 16px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    left  / 1px 16px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    right / 16px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) top    right / 1px 16px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom left  / 16px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom left  / 1px 16px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom right / 16px 1px no-repeat,
+    linear-gradient(var(--gold-dim), var(--gold-dim)) bottom right / 1px 16px no-repeat;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 5px;
   padding: 20px;
 }
 
@@ -693,12 +770,13 @@ button, input, select, textarea { font: inherit; }
   margin-top: 0;
   font-family: 'Cinzel Decorative', serif;
   font-size: 17px;
+  color: var(--gold);
 }
 
 .status-box {
-  background: rgba(8,2,4,0.82);
-  border: 1px dashed rgba(74,28,34,0.55);
-  border-radius: 10px;
+  background: rgba(8,6,2,0.88);
+  border: 1px dashed var(--border-gold);
+  border-radius: 5px;
   padding: 16px;
   margin-top: 14px;
 }
@@ -722,18 +800,19 @@ button, input, select, textarea { font: inherit; }
 
 .play-status-pill {
   background: var(--bg-card);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-gold);
   border-radius: 999px;
   padding: 8px 14px;
   font-size: 13px;
+  color: var(--gold);
 }
 
 .arena-surface {
   position: relative;
   min-height: 0;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-gold);
   border-radius: 18px;
-  background: radial-gradient(ellipse at center, #18060a 0%, #0a0204 55%, #050102 100%);
+  background: radial-gradient(ellipse at center, #1c1206 0%, #0f0b04 55%, #090602 100%);
   overflow: hidden;
   padding: 10px;
 }
@@ -757,9 +836,9 @@ button, input, select, textarea { font: inherit; }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: rgba(8,2,4,0.88);
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  background: rgba(10,7,3,0.92);
+  border: 1px solid var(--border-gold);
+  border-radius: 10px;
   padding: 10px 14px;
 }
 
@@ -777,7 +856,7 @@ button, input, select, textarea { font: inherit; }
   width: 46px;
   height: 46px;
   border-radius: 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-gold);
   object-fit: cover;
   background: var(--bg-card);
 }
@@ -788,11 +867,12 @@ button, input, select, textarea { font: inherit; }
   margin: 0;
   font-size: 15px;
   font-family: 'Cinzel Decorative', serif;
+  color: var(--gold);
 }
 
 .player-text p {
   margin: 2px 0 0;
-  color: var(--bone-dim);
+  color: var(--parchment-dim);
   font-size: 12px;
 }
 
@@ -800,9 +880,9 @@ button, input, select, textarea { font: inherit; }
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(61,12,17,0.55);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  background: rgba(94,16,16,0.40);
+  border: 1px solid var(--blood-mid);
+  border-radius: 8px;
   padding: 6px 10px;
 }
 
@@ -812,6 +892,7 @@ button, input, select, textarea { font: inherit; }
   font-weight: bold;
   font-size: 20px;
   font-family: 'Cinzel Decorative', serif;
+  color: var(--parchment);
 }
 
 .side-zones {
@@ -828,9 +909,9 @@ button, input, select, textarea { font: inherit; }
 .side-zones.right { right: 0; }
 
 .zone-box {
-  background: rgba(8,2,4,0.85);
+  background: rgba(10,7,3,0.90);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 6px;
   min-height: 84px;
   display: flex;
@@ -839,8 +920,8 @@ button, input, select, textarea { font: inherit; }
   align-items: center;
 }
 
-.zone-label { font-size: 10px; color: var(--bone-dim); text-align: center; line-height: 1.1; }
-.zone-count { font-size: 11px; color: var(--bone); }
+.zone-label { font-size: 10px; color: var(--parchment-dim); text-align: center; line-height: 1.1; }
+.zone-count { font-size: 11px; color: var(--parchment); }
 
 .zone-card-preview {
   width: 42px;
@@ -854,9 +935,9 @@ button, input, select, textarea { font: inherit; }
   left: 110px;
   width: 84px;
   height: 112px;
-  background: rgba(8,2,4,0.85);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  background: rgba(10,7,3,0.90);
+  border: 1px solid var(--border-gold);
+  border-radius: 8px;
   padding: 4px;
 }
 
@@ -865,7 +946,7 @@ button, input, select, textarea { font: inherit; }
 
 .zone-title-top {
   font-size: 10px;
-  color: var(--bone-dim);
+  color: var(--gold-dim);
   text-align: center;
   margin-bottom: 4px;
 }
@@ -885,23 +966,23 @@ button, input, select, textarea { font: inherit; }
   right: 110px;
 }
 
-.top .field-zone       { top: 84px; }
-.top .sudden-zone      { top: 208px; }
-.top .territory-zone   { top: 322px; }
+.top .field-zone        { top: 84px; }
+.top .sudden-zone       { top: 208px; }
+.top .territory-zone    { top: 322px; }
 .bottom .territory-zone { bottom: 322px; }
-.bottom .sudden-zone   { bottom: 208px; }
-.bottom .field-zone    { bottom: 84px; }
+.bottom .sudden-zone    { bottom: 208px; }
+.bottom .field-zone     { bottom: 84px; }
 
 .zone-strip {
-  background: rgba(8,2,4,0.72);
+  background: rgba(10,7,3,0.78);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 6px 8px 8px;
 }
 
 .zone-strip-label {
   font-size: 11px;
-  color: var(--bone-dim);
+  color: var(--gold-dim);
   margin-bottom: 6px;
 }
 
@@ -915,18 +996,18 @@ button, input, select, textarea { font: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: rgba(6,1,3,0.82);
+  border-radius: 6px;
+  background: rgba(8,5,2,0.88);
   padding: 4px;
 }
 
-.field-slot     { min-height: 104px; border: 1px dashed rgba(74,28,34,0.65); }
-.sudden-slot    { min-height: 104px; border: 1px dashed rgba(74,74,28,0.65); }
-.territory-slot { min-height: 84px;  border: 1px dashed rgba(42,64,42,0.65); }
+.field-slot     { min-height: 104px; border: 1px dashed rgba(90,68,24,0.55); }
+.sudden-slot    { min-height: 104px; border: 1px dashed rgba(90,68,24,0.40); }
+.territory-slot { min-height: 84px;  border: 1px dashed rgba(58,40,16,0.50); }
 
-.field-slot.empty::after     { content: "Field";     font-size: 10px; color: rgba(212,197,169,0.18); }
-.sudden-slot.empty::after    { content: "Set";       font-size: 10px; color: rgba(212,197,169,0.18); }
-.territory-slot.empty::after { content: "Territory"; font-size:  9px; color: rgba(212,197,169,0.18); }
+.field-slot.empty::after     { content: "Field";     font-size: 10px; color: rgba(232,213,163,0.14); }
+.sudden-slot.empty::after    { content: "Set";       font-size: 10px; color: rgba(232,213,163,0.14); }
+.territory-slot.empty::after { content: "Territory"; font-size:  9px; color: rgba(232,213,163,0.14); }
 
 .territory-slot .mini-card { width: 52px; }
 
@@ -934,8 +1015,8 @@ button, input, select, textarea { font: inherit; }
   width: 74px;
   height: 96px;
   border-radius: 7px;
-  border: 1px solid var(--border);
-  background: linear-gradient(135deg, rgba(61,12,17,0.75), rgba(8,2,4,0.92));
+  border: 1px solid var(--border-gold);
+  background: linear-gradient(140deg, rgba(58,40,16,0.72), rgba(10,7,3,0.95));
 }
 
 .center-stack {
@@ -944,9 +1025,9 @@ button, input, select, textarea { font: inherit; }
   top: 50%;
   width: 180px;
   transform: translate(-50%, -50%);
-  background: rgba(6,1,3,0.92);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  background: rgba(8,5,2,0.96);
+  border: 1px solid var(--border-gold);
+  border-radius: 10px;
   padding: 8px;
   z-index: 3;
 }
@@ -956,6 +1037,7 @@ button, input, select, textarea { font: inherit; }
   font-size: 12px;
   text-align: center;
   font-family: 'Cinzel Decorative', serif;
+  color: var(--gold);
 }
 
 .stack-list {
@@ -967,9 +1049,9 @@ button, input, select, textarea { font: inherit; }
 }
 
 .stack-entry {
-  background: rgba(10,3,5,0.82);
+  background: rgba(12,9,4,0.88);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 5px;
   padding: 6px;
   font-size: 11px;
 }
@@ -980,9 +1062,9 @@ button, input, select, textarea { font: inherit; }
   bottom: 14px;
   width: 240px;
   height: 170px;
-  background: rgba(6,1,3,0.94);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  background: rgba(8,5,2,0.96);
+  border: 1px solid var(--border-gold);
+  border-radius: 10px;
   padding: 8px;
   z-index: 4;
 }
@@ -991,6 +1073,7 @@ button, input, select, textarea { font: inherit; }
   margin: 0 0 8px;
   font-size: 12px;
   font-family: 'Cinzel Decorative', serif;
+  color: var(--gold);
 }
 
 .log-list {
@@ -1002,17 +1085,17 @@ button, input, select, textarea { font: inherit; }
 }
 
 .log-entry {
-  background: rgba(10,3,5,0.82);
+  background: rgba(12,9,4,0.88);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 5px;
   padding: 6px;
   font-size: 11px;
 }
 
 .play-hand-bar {
   background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  border: 1px solid var(--border-gold);
+  border-radius: 12px;
   padding: 10px;
   display: grid;
   grid-template-columns: 1fr auto;
@@ -1024,6 +1107,7 @@ button, input, select, textarea { font: inherit; }
   margin: 0 0 8px;
   font-size: 14px;
   font-family: 'Cinzel Decorative', serif;
+  color: var(--gold);
 }
 
 .hand-row {
@@ -1035,19 +1119,19 @@ button, input, select, textarea { font: inherit; }
 
 .hand-card {
   width: 80px;
-  border-radius: 8px;
+  border-radius: 7px;
   cursor: pointer;
   flex-shrink: 0;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .hand-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 22px rgba(0,0,0,0.55);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.70), 0 0 10px rgba(201,168,76,0.22);
 }
 
 .hand-card.selected {
-  outline: 3px solid var(--accent-bright);
+  outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
 
@@ -1060,26 +1144,26 @@ button, input, select, textarea { font: inherit; }
 
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 1350px) {
-  .board-log              { width: 200px; }
-  .player-strip           { left: 96px; right: 96px; }
+  .board-log            { width: 200px; }
+  .player-strip         { left: 96px; right: 96px; }
   .field-zone,
   .sudden-zone,
-  .territory-zone         { left: 196px; right: 96px; }
+  .territory-zone       { left: 196px; right: 96px; }
 }
 
 @media (max-width: 1150px) {
-  .play-board-root        { height: auto; }
-  .arena-surface          { min-height: 980px; overflow: auto; }
+  .play-board-root      { height: auto; }
+  .arena-surface        { min-height: 980px; overflow: auto; }
 }
 
 @media (max-width: 1100px) {
-  .deckbuilder-layout     { grid-template-columns: 1fr; }
-  .card-preview-image     { max-width: 220px; }
+  .deckbuilder-layout   { grid-template-columns: 1fr; }
+  .card-preview-image   { max-width: 220px; }
 }
 
 @media (max-width: 900px) {
-  #app-shell              { flex-direction: column; }
-  #sidebar                { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
-  .grid-2, .grid-3        { grid-template-columns: 1fr; }
-  .play-menu-grid         { grid-template-columns: 1fr; }
+  #app-shell            { flex-direction: column; }
+  #sidebar              { width: 100%; border-right: none; border-bottom: 1px solid var(--border); height: auto; position: static; }
+  .grid-2, .grid-3      { grid-template-columns: 1fr; }
+  .play-menu-grid       { grid-template-columns: 1fr; }
 }
