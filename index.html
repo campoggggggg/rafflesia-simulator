@@ -4,15 +4,32 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rafflesia</title>
+
+  <!-- Google Fonts: Cinzel Decorative (titoli) + IM Fell English (corpo) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="css/main.css" />
 </head>
 <body>
+
+  <!-- Canvas per le spore bokeh in background (gestito da particles.js) -->
+  <canvas id="spore-canvas" style="
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  "></canvas>
+
   <div id="app-shell">
     <aside id="sidebar">
       <div class="logo">
-  <img src="assets/rafflesia-logo.png" alt="Rafflesia Logo" class="logo-img">
-  <p>Card Game Simulator</p>
-</div>
+        <img src="assets/rafflesia-logo.png" alt="Rafflesia Logo" class="logo-img">
+        <p>Card Game Simulator</p>
+      </div>
 
       <nav class="menu">
         <button class="nav-btn active" data-screen="home">Home</button>
@@ -23,24 +40,48 @@
 
       <div class="sidebar-footer">
         <p id="player-name-label">Player: Duelist</p>
+        <!-- Bottone auth: il testo viene aggiornato da updateGlobalUI() in app.js.
+             Il click handler è registrato in initNavigation() — NON ha data-screen. -->
+        <button class="nav-btn" id="authSidebarBtn" style="margin-top: 12px; width: 100%; text-align: center;">
+          Accedi
+        </button>
       </div>
     </aside>
 
     <main id="main-content">
-      <section id="screen-home" class="screen active"></section>
-      <section id="screen-play" class="screen"></section>
+      <section id="screen-home"        class="screen active"></section>
+      <section id="screen-play"        class="screen"></section>
       <section id="screen-deckbuilder" class="screen"></section>
-      <section id="screen-settings" class="screen"></section>
+      <section id="screen-settings"    class="screen"></section>
+      <section id="screen-auth"        class="screen"></section>
     </main>
   </div>
 
-  <script src="js/storage.js"></script>
-  <script src="js/state.js"></script>
-  <script src="js/cards.js"></script>
-  <script src="js/home.js"></script>
-  <script src="js/settings.js"></script>
-  <script src="js/deckbuilder.js"></script>
-  <script src="js/play.js"></script>
-  <script src="js/app.js"></script>
+  <!-- Supabase SDK — deve essere caricato per primo -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Core: storage (wrapper compatibilità), stato globale, Supabase client -->
+  <script src="js/core/storage.js"></script>
+  <script src="js/core/state.js"></script>
+  <script src="js/core/supabase-client.js"></script>
+
+  <!-- Auth e dati cloud -->
+  <script src="js/auth/auth.js"></script>
+  <script src="js/data/decks.js"></script>
+
+  <!-- Database carte -->
+  <script src="js/data/cards.js"></script>
+
+  <!-- Schermate -->
+  <script src="js/screens/home.js"></script>
+  <script src="js/screens/settings.js"></script>
+  <script src="js/screens/deckbuilder.js"></script>
+  <script src="js/screens/play-menu.js"></script>
+  <script src="js/screens/play-board.js"></script>
+
+  <!-- Auth screen, particelle e controller principale (ultimi) -->
+  <script src="js/auth/auth-screen.js"></script>
+  <script src="js/core/particles.js"></script>
+  <script src="js/core/app.js"></script>
 </body>
-</html>	
+</html>

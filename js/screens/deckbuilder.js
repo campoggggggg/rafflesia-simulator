@@ -181,11 +181,19 @@ function renderDeckBuilderScreen() {
       return;
     }
 
-    // .filter() crea un NUOVO array con solo gli elementi per cui
-    // la funzione restituisce true. Non modifica l'array originale.
+    // Salviamo il riferimento PRIMA di filtrare, perché dopo il filter
+    // il mazzo non è più in AppState e non potremmo recuperare supabase_id.
+    const deletedDeck = AppState.decks.find(d => d.id === AppState.currentDeckId);
+
     AppState.decks = AppState.decks.filter(d => d.id !== AppState.currentDeckId);
     AppState.currentDeckId = AppState.decks[0].id;
     saveDecks();
+
+    // Elimina da Supabase in background (solo se il mazzo aveva un ID cloud).
+    if (deletedDeck && typeof deleteDeckFromSupabase === "function") {
+      deleteDeckFromSupabase(deletedDeck).catch(() => {});
+    }
+
     renderDeckBuilderScreen();
   };
 

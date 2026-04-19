@@ -137,32 +137,36 @@ function makeTerritorySvg(title, subtitle) {
 }
 
 // ── CardDatabase ──────────────────────────────────────────────
-// Trasformiamo il dizionario rawData in un array di oggetti uniformi,
-// più comodi da filtrare e usare nel resto dell'app.
-//
-// Object.keys(rawData) → ["000", "001", ..., "T04"]   (array di ID)
-// .map(id => {...})    → per ogni ID crea un oggetto arricchito
-const CardDatabase = Object.keys(rawData).map(id => {
-  const type = getCardType(id);
+// Popolato subito da rawData (avvio istantaneo), poi aggiornato
+// in background da Supabase se disponibile.
+let CardDatabase = [];
 
-  // Per default l'immagine è un file PNG in assets/cards/.
-  // I Territori non hanno PNG, quindi usiamo l'SVG generato sopra.
+function buildCardObject(id, nome, colore, tipo, icona, costo, testo) {
   let image = `assets/cards/${id}.png`;
-  if (type === "Territory") {
-    image = makeTerritorySvg(getCardName(id), getCardRarity(id));
-  }
+  if (tipo === "Territory") image = makeTerritorySvg(nome, icona);
+  return { id, name: nome, color: colore, type: tipo, rarity: icona, cost: costo, text: testo || "", image };
+}
 
-  return {
-    id,
-    name:   getCardName(id),
-    color:  getCardColor(id),
-    type,
-    rarity: getCardRarity(id),
-    cost:   getCardCost(id),
-    text:   "",   // testo effetto: da riempire in futuro
-    image
-  };
-});
+// Carica le carte da rawData (sincrono, istantaneo).
+function loadCardsFromRawData() {
+  CardDatabase = Object.keys(rawData).map(id =>
+    buildCardObject(id, getCardName(id), getCardColor(id), getCardType(id), getCardRarity(id), getCardCost(id), "")
+  );
+}
+
+// Prova a caricare le carte da Supabase in background.
+// Se fallisce (tabella non creata, offline...) rimane il rawData già caricato.
+async function syncCardsFromSupabase() {
+  try {
+    const { data, error } = await db.from("cards").select("*").order("id");
+    if (error) throw error;
+    CardDatabase = data.map(c =>
+      buildCardObject(c.id, c.nome, c.colore, c.tipo, c.icona, c.costo, c.testo)
+    );
+  } catch (err) {
+    console.warn("Supabase non disponibile, uso dati locali:", err.message);
+  }
+}
 
 // ── IIFE: Inizializzazione Starter Deck ───────────────────────
 // IIFE = Immediately Invoked Function Expression: una funzione
