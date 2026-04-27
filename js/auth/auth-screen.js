@@ -1,67 +1,56 @@
 // ============================================================
 // auth/auth-screen.js — Schermata Login / Registrazione.
-//
-// Due tab: "Accedi" e "Registrati". Il tab attivo mostra il form
-// corrispondente. Tutti gli errori vengono mostrati inline sotto
-// il bottone, senza alert().
-//
-// Dipende da: auth/auth.js (signIn, signUp), app.js (navigateTo)
 // ============================================================
 
-function renderAuthScreen() {
+import { signIn, signUp } from './auth.js';
+
+export function renderAuthScreen() {
   const screen = document.getElementById("screen-auth");
 
   screen.innerHTML = `
     <h2 class="page-title">Account</h2>
-    <p class="page-subtitle">Accedi per salvare i mazzi nel cloud e giocare online con gli amici.</p>
+    <p class="page-subtitle">Login to register your decks and play with friends (wip).</p>
 
     <div class="auth-tabs">
-      <button class="auth-tab active" id="loginTab">Accedi</button>
-      <button class="auth-tab"        id="registerTab">Registrati</button>
+      <button class="auth-tab active" id="loginTab">Login</button>
+      <button class="auth-tab"        id="registerTab">Register</button>
     </div>
 
-    <!-- Form login -->
     <div class="card-panel" id="loginForm">
       <div class="setting-row">
         <label for="loginEmail">Email</label>
-        <input class="input" type="email" id="loginEmail" placeholder="email@esempio.com" />
+        <input class="input" type="email" id="loginEmail" placeholder="email@example.com" />
       </div>
       <div class="setting-row">
         <label for="loginPassword">Password</label>
         <input class="input" type="password" id="loginPassword" placeholder="••••••••" />
       </div>
       <div class="row" style="margin-top: 20px;">
-        <button class="primary-btn" id="loginBtn">Accedi</button>
+        <button class="primary-btn" id="loginBtn">Login</button>
         <p id="loginMsg" class="auth-msg"></p>
       </div>
     </div>
 
-    <!-- Form registrazione (nascosto di default) -->
     <div class="card-panel" id="registerForm" style="display: none;">
       <div class="setting-row">
         <label for="regUsername">Username</label>
-        <input class="input" type="text" id="regUsername" placeholder="Il tuo nome" />
+        <input class="input" type="text" id="regUsername" placeholder="Make it memorable" />
       </div>
       <div class="setting-row">
         <label for="regEmail">Email</label>
-        <input class="input" type="email" id="regEmail" placeholder="email@esempio.com" />
+        <input class="input" type="email" id="regEmail" placeholder="email@example.com" />
       </div>
       <div class="setting-row">
         <label for="regPassword">Password</label>
-        <input class="input" type="password" id="regPassword" placeholder="Minimo 6 caratteri" />
+        <input class="input" type="password" id="regPassword" placeholder="At least 6 characters" />
       </div>
       <div class="row" style="margin-top: 20px;">
-        <button class="primary-btn" id="registerBtn">Crea account</button>
+        <button class="primary-btn" id="registerBtn">Create account</button>
         <p id="registerMsg" class="auth-msg"></p>
       </div>
     </div>
-
-    <p class="muted" style="margin-top: 16px; font-size: 13px;">
-      Puoi usare l'app anche senza account: i mazzi verranno salvati solo su questo dispositivo.
-    </p>
   `;
 
-  // ── Switching tra tab ──────────────────────────────────────
   document.getElementById("loginTab").onclick = () => {
     document.getElementById("loginForm").style.display    = "";
     document.getElementById("registerForm").style.display = "none";
@@ -76,7 +65,6 @@ function renderAuthScreen() {
     document.getElementById("loginTab").classList.remove("active");
   };
 
-  // ── Login ──────────────────────────────────────────────────
   document.getElementById("loginBtn").onclick = async () => {
     const email    = document.getElementById("loginEmail").value.trim();
     const password = document.getElementById("loginPassword").value;
@@ -89,7 +77,6 @@ function renderAuthScreen() {
 
     try {
       await signIn(email, password);
-      // onAuthChange in app.js rileva il login e reindirizza alla home.
     } catch (err) {
       msg.className   = "auth-msg error";
       msg.textContent = err.message;
@@ -98,7 +85,6 @@ function renderAuthScreen() {
     }
   };
 
-  // ── Registrazione ──────────────────────────────────────────
   document.getElementById("registerBtn").onclick = async () => {
     const username = document.getElementById("regUsername").value.trim();
     const email    = document.getElementById("regEmail").value.trim();
@@ -111,7 +97,7 @@ function renderAuthScreen() {
 
     if (!username) {
       msg.className   = "auth-msg error";
-      msg.textContent = "Inserisci un username.";
+      msg.textContent = "Enter username.";
       return;
     }
 
@@ -120,7 +106,7 @@ function renderAuthScreen() {
     try {
       await signUp(email, password, username);
       msg.className   = "auth-msg success";
-      msg.textContent = "Account creato! Controlla la tua email per confermare.";
+      msg.textContent = "Account created! Check your email to confirm.";
     } catch (err) {
       msg.className   = "auth-msg error";
       msg.textContent = err.message;

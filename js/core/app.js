@@ -1,88 +1,38 @@
 // ============================================================
-// app.js — Controller principale: navigazione e avvio app.
+// app.js — Entry point. Importa tutto e avvia l'app.
+//
+// Questo file non esporta nulla: è il punto di ingresso
+// caricato da index.html come <script type="module">.
 // ============================================================
 
-let navigationHistory = ["auth"];
-let currentScreen     = "auth";
+import { navigateTo, setNavigationHistory, getNavigationHistory } from './router.js';
+import { updateGlobalUI }         from './ui.js';
+import { getUser, signOut, onAuthChange, ensureProfile } from '../auth/auth.js';
+import { onLoginLoadDecks }        from '../data/decks.js';
+import { syncCardsFromSupabase }   from '../data/cards.js';
+import { AppState }                from './state.js';
+import { initSporeCanvas }         from './particles.js';
 
-function navigateTo(screenName, addToHistory = true) {
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-
-  const targetScreen = document.getElementById(`screen-${screenName}`);
-  if (!targetScreen) return;
-
-  targetScreen.classList.add("active");
-
-  const targetButton = document.querySelector(`.nav-btn[data-screen="${screenName}"]`);
-  if (targetButton) targetButton.classList.add("active");
-
-  if (addToHistory && currentScreen !== screenName) {
-    navigationHistory.push(screenName);
-  }
-
-  currentScreen = screenName;
-  updateBackButtons();
-}
-
-function goBack() {
-  if (navigationHistory.length <= 1) { navigateTo("home", false); return; }
-  navigationHistory.pop();
-  navigateTo(navigationHistory[navigationHistory.length - 1] || "home", false);
-}
-
-function goHome() {
-  navigationHistory = ["home"];
-  navigateTo("home", false);
-}
-
-function updateBackButtons() {
-  document.querySelectorAll(".back-btn").forEach(btn => { btn.onclick = goBack; });
-  document.querySelectorAll(".home-btn").forEach(btn => { btn.onclick = goHome; });
-}
-
-// Aggiorna tema (via classe CSS) e nome giocatore nella sidebar.
-// NON tocca più l'onclick del bottone auth — quello è gestito in initNavigation().
-function updateGlobalUI() {
-  const label = document.getElementById("player-name-label");
-  if (label) label.textContent = `Player: ${AppState.settings.playerName}`;
-
-  // Tema gestito tramite classe CSS per aggiornare tutte le variabili colore.
-  document.body.classList.toggle("theme-light", AppState.settings.theme === "light");
-
-  // Aggiorna solo il testo del bottone auth, non l'onclick.
-  if (typeof getUser === "function") {
-    getUser().then(user => {
-      const btn = document.getElementById("authSidebarBtn");
-      if (!btn) return;
-      btn.textContent = user ? `${user.email.split("@")[0]} · Esci` : "Accedi";
-    });
-  }
-}
+import { renderHomeScreen }           from '../screens/home.js';
+import { renderPlayScreen }           from '../screens/play/play-menu.js';
+import { renderDeckBuilderScreen }    from '../screens/deckbuilder.js';
+import { renderSettingsScreen }       from '../screens/settings.js';
+import { renderAuthScreen }           from '../auth/auth-screen.js';
+import { renderAdvancedSearchScreen } from '../screens/advancedsearch/index.js';
 
 function initNavigation() {
-  // BUG FIX: seleziona solo i bottoni con data-screen.
-  // In precedenza ".nav-btn" includeva anche #authSidebarBtn (senza data-screen),
-  // causando navigateTo(undefined) che rimuoveva .active da tutti gli screen
-  // e non lo riaggungeva a nessuno → pagina bianca.
   document.querySelectorAll(".nav-btn[data-screen]").forEach(btn => {
     btn.addEventListener("click", () => navigateTo(btn.dataset.screen));
   });
 
-  // Il bottone auth viene gestito qui con un click listener dedicato,
-  // in modo sincrono: controlla getUser() al momento del click
-  // invece di affidarsi all'onclick assegnato in modo asincrono da updateGlobalUI().
   const authBtn = document.getElementById("authSidebarBtn");
   if (authBtn) {
     authBtn.addEventListener("click", async () => {
-      if (typeof getUser !== "function") return;
       const user = await getUser();
       if (user) {
         try { await signOut(); } catch (e) { console.warn("Logout:", e.message); }
-        // Naviga a auth esplicitamente: onAuthChange potrebbe non scattare
-        // se la sessione è già scaduta o il signOut fallisce silenziosamente.
         updateGlobalUI();
-        navigationHistory = ["auth"];
+        setNavigationHistory(["auth"]);
         navigateTo("auth", false);
       } else {
         navigateTo("auth");
@@ -91,48 +41,60 @@ function initNavigation() {
   }
 }
 
+function initSidebarToggle() {
+  const sidebar     = document.getElementById("sidebar");
+  const collapseBtn = document.getElementById("sidebarCollapseBtn");
+  const expandBtn   = document.getElementById("sidebarExpandBtn");
+  if (!sidebar || !collapseBtn || !expandBtn) return;
+
+  collapseBtn.addEventListener("click", () => {
+    sidebar.classList.add("collapsed");
+    expandBtn.style.display = "flex";
+  });
+
+  expandBtn.addEventListener("click", () => {
+    sidebar.classList.remove("collapsed");
+    expandBtn.style.display = "none";
+  });
+}
+
 async function initApp() {
-  renderHomeScreen();
-  renderPlayScreen();
-  renderDeckBuilderScreen();
-  renderSettingsScreen();
-  renderAuthScreen();
-
   initNavigation();
+  initSidebarToggle();
 
-  // Applica tema dai default (sarà sovrascritto dopo INITIAL_SESSION).
+  try { renderHomeScreen();             } catch (e) { console.error("renderHomeScreen:",           e); }
+  try { renderPlayScreen();             } catch (e) { console.error("renderPlayScreen:",           e); }
+  try { renderDeckBuilderScreen();      } catch (e) { console.error("renderDeckBuilderScreen:",    e); }
+  try { renderSettingsScreen();         } catch (e) { console.error("renderSettingsScreen:",       e); }
+  try { renderAuthScreen();             } catch (e) { console.error("renderAuthScreen:",           e); }
+renderAdvancedSearchScreen();
+
   document.body.classList.toggle("theme-light", AppState.settings.theme === "light");
   const label = document.getElementById("player-name-label");
   if (label) label.textContent = `Player: ${AppState.settings.playerName}`;
 
-  // Parti sulla schermata auth: si resterà qui se non c'è sessione,
-  // oppure onAuthChange(INITIAL_SESSION) reindirizzerà alla home.
-  navigationHistory = ["auth"];
+  setNavigationHistory(["auth"]);
   navigateTo("auth", false);
 
-  if (typeof onAuthChange === "function") {
-    onAuthChange(async (event, user) => {
-      if (user && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
-        await onLoginLoadDecks();
-        renderDeckBuilderScreen();
-        updateGlobalUI();
-        if (currentScreen === "auth") navigateTo("home", false);
+  onAuthChange(async (event, user) => {
+    if (user && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+      await ensureProfile(user);
+      await onLoginLoadDecks();
+      renderDeckBuilderScreen();
+      updateGlobalUI();
+      if (getNavigationHistory().at(-1) === "auth") navigateTo("home", false);
 
-      } else if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !user)) {
-        // Dopo logout o sessione assente: torna alla schermata di login.
-        updateGlobalUI();
-        navigationHistory = ["auth"];
-        navigateTo("auth", false);
-      }
-    });
-  }
+    } else if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !user)) {
+      updateGlobalUI();
+      setNavigationHistory(["auth"]);
+      navigateTo("auth", false);
+    }
+  });
 
-  if (typeof initSporeCanvas === "function") initSporeCanvas();
+  initSporeCanvas();
 
-  // Carica le carte da Supabase, poi ri-renderizza il deckbuilder
-  // (al primo render CardDatabase era ancora vuoto).
   await syncCardsFromSupabase();
   renderDeckBuilderScreen();
 }
 
-window.onload = initApp;
+initApp();

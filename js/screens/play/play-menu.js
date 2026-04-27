@@ -1,20 +1,12 @@
 // ============================================================
-// play.js — Menù Play e selezione modalità di gioco.
-//
-// Contiene solo la schermata di selezione (Vs AI / Multiplayer)
-// e la validazione del mazzo prima di avviare la partita.
-//
-// La logica di gioco vera e propria è in play-board.js.
+// play/play-menu.js — Menù Play e selezione modalità.
 // ============================================================
 
-// PlayState è condiviso tra questo file e play-board.js.
-// Quando non c'è una partita attiva vale null; quando la partita
-// inizia (startAIGame) viene rimpiazzato con l'oggetto di stato completo.
-let PlayState = null;
+import { getCurrentDeck }    from '../../core/state.js';
+import { startAIGame }       from './play-board.js';
+import { updateBackButtons } from '../../core/router.js';
 
-// ── Menù Play ─────────────────────────────────────────────────
-
-function renderPlayScreen() {
+export function renderPlayScreen() {
   const screen      = document.getElementById("screen-play");
   const currentDeck = getCurrentDeck();
 
@@ -62,7 +54,7 @@ function renderPlayScreen() {
       return;
     }
 
-    startAIGame(deck);
+    startAIGame(deck, renderPlayScreen);
   };
 
   document.getElementById("startMpBtn").onclick = () => {
@@ -72,14 +64,12 @@ function renderPlayScreen() {
   updateBackButtons();
 }
 
-// Controlla le regole minime per avviare la partita.
-// Restituisce un array di stringhe di errore (vuoto se tutto ok).
-function getDeckValidationIssuesForPlay(deck) {
+export function getDeckValidationIssuesForPlay(deck) {
   const issues = [];
   if (!deck.commanderId) issues.push("Manca il comandante.");
-  if (deck.cards.length !== 29) issues.push(`Il main deck deve contenere 29 carte. Attuali: ${deck.cards.length}.`);
-  if ((deck.territoryCards || []).length !== 12) {
+  if (deck.cards.length !== 29)
+    issues.push(`Il main deck deve contenere 29 carte. Attuali: ${deck.cards.length}.`);
+  if ((deck.territoryCards || []).length !== 12)
     issues.push(`Il territory deck deve contenere 12 carte. Attuali: ${(deck.territoryCards || []).length}.`);
-  }
   return issues;
 }

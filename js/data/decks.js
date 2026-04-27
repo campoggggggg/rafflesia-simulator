@@ -1,20 +1,12 @@
 // ============================================================
 // data/decks.js — Sincronizzazione mazzi con Supabase.
-//
-// Supabase è la fonte di verità per gli utenti autenticati.
-// localStorage non viene più usato.
-//
-// Struttura tabella "decks" su Supabase:
-//   id               SERIAL PRIMARY KEY
-//   user_id          UUID  → riferimento a auth.users
-//   name             TEXT
-//   commander_id     TEXT
-//   cards            TEXT[]
-//   territory_cards  TEXT[]
-//   updated_at       TIMESTAMPTZ
 // ============================================================
 
-async function loadDecksFromSupabase() {
+import { db }                      from '../core/supabase-client.js';
+import { getUser, loadSettingsFromCloud } from '../auth/auth.js';
+import { AppState, getCurrentDeck }       from '../core/state.js';
+
+export async function loadDecksFromSupabase() {
   const user = await getUser();
   if (!user) return null;
 
@@ -36,7 +28,7 @@ async function loadDecksFromSupabase() {
   }));
 }
 
-async function saveDeckToSupabase(deck) {
+export async function saveDeckToSupabase(deck) {
   const user = await getUser();
   if (!user) return;
 
@@ -66,13 +58,12 @@ async function saveDeckToSupabase(deck) {
 
     if (error) { console.warn("Errore inserimento mazzo:", error.message); return; }
 
-    // Aggiorna l'ID in memoria (non più su localStorage).
     deck.supabase_id = data.id;
     deck.id          = data.id;
   }
 }
 
-async function deleteDeckFromSupabase(deck) {
+export async function deleteDeckFromSupabase(deck) {
   if (!deck.supabase_id) return;
   const user = await getUser();
   if (!user) return;
@@ -86,17 +77,13 @@ async function deleteDeckFromSupabase(deck) {
   if (error) console.warn("Errore eliminazione mazzo:", error.message);
 }
 
-// Chiamata dopo il login: carica mazzi e impostazioni dal cloud.
-// Se il cloud è vuoto (primo accesso), carica lo starter deck locale.
-async function onLoginLoadDecks() {
+export async function onLoginLoadDecks() {
   const remote = await loadDecksFromSupabase();
 
   if (remote && remote.length > 0) {
-    // Il cloud è fonte di verità.
     AppState.decks         = remote;
     AppState.currentDeckId = remote[0].id;
   } else {
-    // Primo accesso: sincronizza lo starter deck locale su Supabase.
     for (const deck of AppState.decks) {
       await saveDeckToSupabase(deck);
     }
@@ -107,11 +94,14 @@ async function onLoginLoadDecks() {
     }
   }
 
-  // Carica le impostazioni salvate nel profilo cloud.
-  if (typeof loadSettingsFromCloud === "function") {
-    const cloudSettings = await loadSettingsFromCloud();
-    if (cloudSettings) {
-      AppState.settings = { ...AppState.settings, ...cloudSettings };
-    }
+  const cloudSettings = await loadSettingsFromCloud();
+  if (cloudSettings) {
+    AppState.settings = { ...AppState.settings, ...cloudSettings };
   }
+}
+
+// Convenienza: persiste il mazzo corrente su Supabase.
+export function saveDecks() {
+  const deck = getCurrentDeck();
+  if (deck) saveDeckToSupabase(deck).catch(() => {});
 }

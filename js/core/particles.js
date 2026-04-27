@@ -6,7 +6,7 @@
 // che simula spore o bokeh organici.
 // ============================================================
 
-function initSporeCanvas() {
+export function initSporeCanvas() {
   const canvas = document.getElementById("spore-canvas");
   if (!canvas) return;
 

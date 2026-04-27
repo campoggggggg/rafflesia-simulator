@@ -14,7 +14,7 @@
 // `const` dichiara una variabile che non può essere riassegnata.
 // Qui usiamo un oggetto letterale come "namespace" per raggruppare
 // due funzioni correlate: save e load.
-const Storage = {
+export const Storage = {
 
   // Salva `value` nel localStorage con la chiave `key`.
   // JSON.stringify trasforma qualsiasi valore (oggetto, array, numero...)

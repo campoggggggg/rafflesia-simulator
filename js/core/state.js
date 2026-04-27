@@ -1,15 +1,11 @@
 // ============================================================
-// state.js — Stato globale dell'applicazione.
+// state.js — Stato globale dell'applicazione (solo dati).
 //
-// AppState usa valori di default in memoria.
-// I dati vengono caricati dal cloud dopo l'autenticazione:
-//   - Mazzi: tabella "decks" su Supabase (data/decks.js)
-//   - Impostazioni: user_metadata di Supabase Auth (auth/auth.js)
-//
-// localStorage non viene più usato per la persistenza principale.
+// saveSettings e saveDecks sono stati spostati nei moduli che
+// li gestiscono: auth.js e decks.js rispettivamente.
 // ============================================================
 
-const AppState = {
+export const AppState = {
 
   settings: {
     playerName:    "Duelist",
@@ -19,8 +15,6 @@ const AppState = {
     endTurnConfirm: true
   },
 
-  // Starter deck inizializzato con id=1 per compatibilità con l'IIFE
-  // in data/cards.js che cerca AppState.decks.find(d => d.id === 1).
   decks: [
     {
       id:            1,
@@ -34,24 +28,7 @@ const AppState = {
   currentDeckId: 1
 };
 
-// Persiste le impostazioni su Supabase user_metadata.
-// saveSettingsToCloud è definita in auth/auth.js.
-function saveSettings() {
-  if (typeof saveSettingsToCloud === "function") {
-    saveSettingsToCloud(AppState.settings).catch(() => {});
-  }
-}
-
-// Persiste il mazzo corrente su Supabase.
-// saveDeckToSupabase è definita in data/decks.js.
-function saveDecks() {
-  if (typeof saveDeckToSupabase === "function") {
-    const deck = getCurrentDeck();
-    if (deck) saveDeckToSupabase(deck).catch(() => {});
-  }
-}
-
-function getCurrentDeck() {
+export function getCurrentDeck() {
   return AppState.decks.find(d => d.id === AppState.currentDeckId)
     || AppState.decks[0]
     || null;

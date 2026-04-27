@@ -1,15 +1,13 @@
 // ============================================================
-// play-board.js — Engine di gioco e rendering del campo.
-//
-// Contiene tutta la logica di una partita attiva:
-//  1. Utility      → shuffle, log, avatar, costruzione deck AI
-//  2. Setup        → startAIGame(), emptyPlayerState()
-//  3. Azioni       → draw, play, sudden, stack, risoluzione, AI
-//  4. Rendering    → renderGameBoard() e tutte le sotto-funzioni
-//
-// Dipende da: play.js (PlayState), state.js (AppState),
-//             cards.js (CardDatabase)
+// play/play-board.js — Engine di gioco e rendering del campo.
 // ============================================================
+
+import { AppState }      from '../../core/state.js';
+import { CardDatabase }  from '../../data/cards.js';
+
+let PlayState   = null;
+let _onExitGame = null;
+function setPlayState(s) { PlayState = s; }
 
 // ── Utility ───────────────────────────────────────────────────
 
@@ -54,7 +52,6 @@ function buildAIMainDeck(commander) {
     card.id   !== commander.id &&
     (card.color === commander.color || card.color === "Colorless")
   );
-
   const result = [];
   for (const card of pool) {
     const maxCopies = card.rarity === "Legendary" ? 1 : (card.rarity === "Basic" ? 99 : 2);
@@ -86,11 +83,12 @@ function emptyPlayerState(name, avatar, commanderId, library, territoryLibrary) 
   };
 }
 
-function startAIGame(deck) {
+export function startAIGame(deck, onExit) {
+  _onExitGame = onExit ?? null;
   const playerCommander = getCardById(deck.commanderId);
   const aiCommander     = createAICommander(playerCommander);
 
-  PlayState = {
+  setPlayState({
     turn:               1,
     activePlayer:       "player",
     selectedHandIndex:  null,
@@ -110,7 +108,7 @@ function startAIGame(deck) {
       buildAIMainDeck(aiCommander),
       []
     )
-  };
+  });
 
   addPlayLog("Partita iniziata.");
   addPlayLog(`Il tuo comandante è ${playerCommander.name}.`);
@@ -129,10 +127,8 @@ function startAIGame(deck) {
 function drawCardFor(side, logIt = true) {
   const actor = PlayState[side];
   if (!actor || actor.library.length === 0) return;
-
   const cardId = actor.library.shift();
   actor.hand.push(cardId);
-
   if (logIt) {
     addPlayLog(side === "player" ? "Hai pescato una carta." : "L'AI ha pescato una carta.");
   }
@@ -141,13 +137,10 @@ function drawCardFor(side, logIt = true) {
 function drawTerritoryFor(side, logIt = true) {
   const actor = PlayState[side];
   if (!actor || actor.territoryLibrary.length === 0) return;
-
   const slotIndex = actor.territoryZone.findIndex(slot => slot === null);
   if (slotIndex === -1) return;
-
   const cardId = actor.territoryLibrary.shift();
   actor.territoryZone[slotIndex] = cardId;
-
   if (logIt) {
     addPlayLog(side === "player" ? "Hai messo un Territory in gioco." : "L'AI ha messo un Territory in gioco.");
   }
@@ -156,14 +149,14 @@ function drawTerritoryFor(side, logIt = true) {
 function loseIfNeeded() {
   if (PlayState.player.life <= 0) {
     alert("Hai perso la partita.");
-    PlayState = null;
-    renderPlayScreen();
+    setPlayState(null);
+    if (_onExitGame) _onExitGame();
     return true;
   }
   if (PlayState.ai.life <= 0) {
     alert("Hai vinto la partita.");
-    PlayState = null;
-    renderPlayScreen();
+    setPlayState(null);
+    if (_onExitGame) _onExitGame();
     return true;
   }
   return false;
@@ -179,21 +172,13 @@ function changeLife(side, amount) {
 function playSelectedToField() {
   if (PlayState.activePlayer     !== "player") return;
   if (PlayState.selectedHandIndex === null)     return;
-
   const slotIndex = PlayState.player.field.findIndex(slot => slot === null);
-  if (slotIndex === -1) {
-    addPlayLog("Non hai slot liberi nel field.");
-    renderGameBoard();
-    return;
-  }
-
+  if (slotIndex === -1) { addPlayLog("Non hai slot liberi nel field."); renderGameBoard(); return; }
   const cardId = PlayState.player.hand[PlayState.selectedHandIndex];
   const card   = getCardById(cardId);
-
   PlayState.player.hand.splice(PlayState.selectedHandIndex, 1);
   PlayState.player.field[slotIndex] = cardId;
   PlayState.selectedHandIndex       = null;
-
   addPlayLog(`Hai giocato ${card?.name || "una carta"} nel field.`);
   renderGameBoard();
 }
@@ -201,19 +186,12 @@ function playSelectedToField() {
 function playSelectedToSudden() {
   if (PlayState.activePlayer     !== "player") return;
   if (PlayState.selectedHandIndex === null)     return;
-
   const slotIndex = PlayState.player.suddenZone.findIndex(slot => slot === null);
-  if (slotIndex === -1) {
-    addPlayLog("La sudden zone è piena.");
-    renderGameBoard();
-    return;
-  }
-
+  if (slotIndex === -1) { addPlayLog("La sudden zone è piena."); renderGameBoard(); return; }
   const cardId = PlayState.player.hand[PlayState.selectedHandIndex];
   PlayState.player.hand.splice(PlayState.selectedHandIndex, 1);
   PlayState.player.suddenZone[slotIndex] = { cardId, facedown: true };
   PlayState.selectedHandIndex            = null;
-
   addPlayLog("Hai settato una carta nella sudden zone.");
   renderGameBoard();
 }
@@ -221,36 +199,28 @@ function playSelectedToSudden() {
 function sendSelectedToStack() {
   if (PlayState.activePlayer     !== "player") return;
   if (PlayState.selectedHandIndex === null)     return;
-
   const cardId = PlayState.player.hand[PlayState.selectedHandIndex];
   const card   = getCardById(cardId);
-
   PlayState.player.hand.splice(PlayState.selectedHandIndex, 1);
   PlayState.globalStack.unshift({ owner: "player", cardId });
   PlayState.selectedHandIndex = null;
-
   addPlayLog(`${card?.name || "Una carta"} è stata messa nello stack.`);
   renderGameBoard();
 }
 
 function resolveTopOfStack() {
   if (!PlayState.globalStack.length) return;
-
   const top   = PlayState.globalStack.shift();
   const actor = PlayState[top.owner];
   actor.graveyard.push(top.cardId);
-
   const card = getCardById(top.cardId);
   addPlayLog(`${card?.name || "Una carta"} si è risolta ed è andata nel graveyard.`);
   renderGameBoard();
 }
 
-// ── Turno AI ──────────────────────────────────────────────────
-
 function aiTakeTurn() {
   drawCardFor("ai",      true);
   drawTerritoryFor("ai", true);
-
   const slotIndex = PlayState.ai.field.findIndex(slot => slot === null);
   if (slotIndex !== -1 && PlayState.ai.hand.length > 0) {
     const cardId = PlayState.ai.hand.shift();
@@ -258,7 +228,6 @@ function aiTakeTurn() {
     const card = getCardById(cardId);
     addPlayLog(`L'AI ha giocato ${card?.name || "una carta"} nel field.`);
   }
-
   PlayState.turn        += 1;
   PlayState.activePlayer = "player";
   drawCardFor("player", true);
@@ -267,11 +236,9 @@ function aiTakeTurn() {
 
 function endTurn() {
   if (PlayState.activePlayer !== "player") return;
-
   PlayState.activePlayer      = "ai";
   PlayState.selectedHandIndex = null;
   renderGameBoard();
-
   window.setTimeout(() => { aiTakeTurn(); }, 500);
 }
 
@@ -281,15 +248,12 @@ function renderMiniCard(cardId, hidden = false) {
   if (!cardId) return "";
   const card = getCardById(cardId);
   if (!card)   return "";
-
   if (hidden) return `<div class="face-down-card"></div>`;
-
   return `<img class="mini-card" src="${card.image}" alt="${card.name}" title="${card.name}" onerror="this.style.display='none'">`;
 }
 
 function renderSimpleZone(cards) {
   if (!cards.length) return `<div class="zone-count">0</div>`;
-
   const top = getCardById(cards[cards.length - 1]);
   return `
     ${top ? `<img class="zone-card-preview" src="${top.image}" alt="${top.name}" onerror="this.style.display='none'">` : ""}
@@ -322,31 +286,20 @@ function renderTerritoryZone(zone) {
 }
 
 function renderHand() {
-  if (!PlayState.player.hand.length) {
-    return `<p class="muted">La tua mano è vuota.</p>`;
-  }
-
+  if (!PlayState.player.hand.length) return `<p class="muted">La tua mano è vuota.</p>`;
   return PlayState.player.hand.map((cardId, index) => {
     const card     = getCardById(cardId);
     const selected = PlayState.selectedHandIndex === index ? "selected" : "";
     return `
-      <img
-        class="hand-card ${selected}"
-        src="${card?.image || ""}"
-        alt="${card?.name || "Card"}"
-        title="${card?.name || "Card"}"
-        data-hand-index="${index}"
-        onerror="this.style.display='none'"
-      >
+      <img class="hand-card ${selected}"
+           src="${card?.image || ""}" alt="${card?.name || "Card"}" title="${card?.name || "Card"}"
+           data-hand-index="${index}" onerror="this.style.display='none'">
     `;
   }).join("");
 }
 
 function renderStack() {
-  if (!PlayState.globalStack.length) {
-    return `<div class="stack-entry">Stack vuoto.</div>`;
-  }
-
+  if (!PlayState.globalStack.length) return `<div class="stack-entry">Stack vuoto.</div>`;
   return PlayState.globalStack.map(entry => {
     const card = getCardById(entry.cardId);
     return `
@@ -456,7 +409,6 @@ function renderHalf(side) {
   `;
 }
 
-// Render principale del campo: ridisegna tutto ad ogni cambio di stato.
 function renderGameBoard() {
   const screen      = document.getElementById("screen-play");
   const canAct      = PlayState.activePlayer === "player";
@@ -506,8 +458,8 @@ function renderGameBoard() {
   `;
 
   document.getElementById("leaveGameBtn").onclick = () => {
-    PlayState = null;
-    renderPlayScreen();
+    setPlayState(null);
+    if (_onExitGame) _onExitGame();
   };
 
   document.querySelectorAll(".hand-card").forEach(el => {
@@ -522,7 +474,6 @@ function renderGameBoard() {
   document.querySelectorAll(".life-minus-btn").forEach(btn => {
     btn.onclick = () => changeLife(btn.dataset.side, -1);
   });
-
   document.querySelectorAll(".life-plus-btn").forEach(btn => {
     btn.onclick = () => changeLife(btn.dataset.side, +1);
   });

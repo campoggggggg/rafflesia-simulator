@@ -1,8 +1,13 @@
 // ============================================================
-// settings.js — Schermata Impostazioni.
+// screens/settings.js — Schermata Impostazioni.
 // ============================================================
 
-function renderSettingsScreen() {
+import { AppState }        from '../core/state.js';
+import { saveSettings }    from '../auth/auth.js';
+import { updateGlobalUI }  from '../core/ui.js';
+import { updateBackButtons } from '../core/router.js';
+
+export function renderSettingsScreen() {
   const screen = document.getElementById("screen-settings");
 
   screen.innerHTML = `
@@ -72,8 +77,8 @@ function renderSettingsScreen() {
     AppState.settings.theme          = document.getElementById("themeSelect").value;
     AppState.settings.endTurnConfirm = document.getElementById("endTurnConfirmInput").checked;
 
-    saveSettings();   // persiste su Supabase (state.js → auth.js)
-    updateGlobalUI(); // applica tema e nome
+    saveSettings();
+    updateGlobalUI();
 
     saveMsg.className   = "auth-msg success";
     saveMsg.textContent = "✓ Salvato";
