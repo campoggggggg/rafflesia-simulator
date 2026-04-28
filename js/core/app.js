@@ -70,8 +70,6 @@ async function initApp() {
 renderAdvancedSearchScreen();
 
   document.body.classList.toggle("theme-light", AppState.settings.theme === "light");
-  const label = document.getElementById("player-name-label");
-  if (label) label.textContent = `Player: ${AppState.settings.playerName}`;
 
   setNavigationHistory(["home"]);
   navigateTo("home", false);

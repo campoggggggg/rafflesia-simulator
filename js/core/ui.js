@@ -9,14 +9,14 @@ import { AppState } from './state.js';
 import { getUser }  from '../auth/auth.js';
 
 export function updateGlobalUI() {
-  const label = document.getElementById("player-name-label");
-  if (label) label.textContent = `Player: ${AppState.settings.playerName}`;
-
   document.body.classList.toggle("theme-light", AppState.settings.theme === "light");
 
   getUser().then(user => {
     const btn = document.getElementById("authSidebarBtn");
     if (!btn) return;
-    btn.textContent = user ? `${user.email.split("@")[0]} · Esci` : "Accedi";
+    const displayName = user
+      ? (user.user_metadata?.username || user.email.split("@")[0])
+      : null;
+    btn.textContent = user ? `${displayName} · Esci` : "Accedi";
   });
 }

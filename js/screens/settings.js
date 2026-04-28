@@ -16,12 +16,6 @@ export function renderSettingsScreen() {
 
     <div class="card-panel">
       <div class="setting-row">
-        <label for="playerNameInput">Nome giocatore</label>
-        <input id="playerNameInput" class="input" type="text"
-               value="${AppState.settings.playerName}" />
-      </div>
-
-      <div class="setting-row">
         <label for="musicVolumeInput">Volume musica</label>
         <input id="musicVolumeInput" type="range" min="0" max="100"
                value="${AppState.settings.musicVolume}" />
@@ -60,7 +54,6 @@ export function renderSettingsScreen() {
   const saveMsg  = document.getElementById("settingsSaveMsg");
 
   saveBtn.addEventListener("click", () => {
-    AppState.settings.playerName     = document.getElementById("playerNameInput").value.trim() || "Duelist";
     AppState.settings.musicVolume    = Number(document.getElementById("musicVolumeInput").value);
     AppState.settings.sfxVolume      = Number(document.getElementById("sfxVolumeInput").value);
     AppState.settings.theme          = document.getElementById("themeSelect").value;
