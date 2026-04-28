@@ -73,8 +73,8 @@ renderAdvancedSearchScreen();
   const label = document.getElementById("player-name-label");
   if (label) label.textContent = `Player: ${AppState.settings.playerName}`;
 
-  setNavigationHistory(["auth"]);
-  navigateTo("auth", false);
+  setNavigationHistory(["home"]);
+  navigateTo("home", false);
 
   onAuthChange(async (event, user) => {
     if (user && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
@@ -82,12 +82,8 @@ renderAdvancedSearchScreen();
       await onLoginLoadDecks();
       renderDeckBuilderScreen();
       updateGlobalUI();
-      if (getNavigationHistory().at(-1) === "auth") navigateTo("home", false);
-
     } else if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !user)) {
       updateGlobalUI();
-      setNavigationHistory(["auth"]);
-      navigateTo("auth", false);
     }
   });
 

@@ -357,7 +357,10 @@ function renderDeckPanel() {
     const c = CardDatabase.find(x => x.id === row.dataset.id);
     row.addEventListener('click',      () => removeCard(row.dataset.id, row.dataset.slot));
     if (c) {
-      row.addEventListener('mouseenter', () => showTooltip(c));
+      row.addEventListener('mousemove', e => {
+        const r = row.getBoundingClientRect();
+        (e.clientX - r.left) / r.width <= 0.6 ? showTooltip(c) : hideTooltip();
+      });
       row.addEventListener('mouseleave', hideTooltip);
     }
   });
@@ -490,8 +493,11 @@ function renderCardList() {
   list.querySelectorAll('.db-lr').forEach(row => {
     const c = CardDatabase.find(x => x.id === row.dataset.id);
     if (!c) return;
-    row.addEventListener('click',      () => addCard(c));
-    row.addEventListener('mouseenter', () => showTooltip(c));
+    row.addEventListener('click', () => addCard(c));
+    row.addEventListener('mousemove', e => {
+      const r = row.getBoundingClientRect();
+      (e.clientX - r.left) / r.width <= 0.6 ? showTooltip(c) : hideTooltip();
+    });
     row.addEventListener('mouseleave', hideTooltip);
   });
 }
