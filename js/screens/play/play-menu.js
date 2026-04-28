@@ -13,7 +13,6 @@ export function renderPlayScreen() {
   screen.innerHTML = `
     <div class="row" style="margin-bottom: 16px;">
       <button class="secondary-btn back-btn">← Indietro</button>
-      <button class="secondary-btn home-btn">Home</button>
     </div>
 
     <h2 class="page-title">Play</h2>

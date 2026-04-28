@@ -23,8 +23,9 @@ export async function loadDecksFromSupabase() {
     supabase_id:    row.id,
     name:           row.name,
     commanderId:    row.commander_id,
-    cards:          row.cards           || [],
-    territoryCards: row.territory_cards || []
+    cards:          row.cards            || [],
+    territoryCards: row.territory_cards  || [],
+    sideboardCards: row.sideboard_cards  || []
   }));
 }
 
@@ -35,9 +36,10 @@ export async function saveDeckToSupabase(deck) {
   const payload = {
     user_id:         user.id,
     name:            deck.name,
-    commander_id:    deck.commanderId   || null,
-    cards:           deck.cards         || [],
+    commander_id:    deck.commanderId    || null,
+    cards:           deck.cards          || [],
     territory_cards: deck.territoryCards || [],
+    sideboard_cards: deck.sideboardCards || [],
     updated_at:      new Date().toISOString()
   };
 

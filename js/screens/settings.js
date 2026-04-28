@@ -11,17 +11,6 @@ export function renderSettingsScreen() {
   const screen = document.getElementById("screen-settings");
 
   screen.innerHTML = `
-    <div class="topbar-row">
-      <button type="button" class="home-btn-circle home-btn" title="Home">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-          <polyline points="9 22 9 12 15 12 15 22"/>
-        </svg>
-      </button>
-    </div>
-
     <h2 class="page-title">Settings</h2>
     <p class="page-subtitle">Configura il tuo profilo e le preferenze di gioco.</p>
 

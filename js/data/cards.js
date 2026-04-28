@@ -21,6 +21,7 @@ export function buildCardObject(row) {
     color,
     colors,
     type:         row.type_line,
+    subtype:      row.subtype    ?? "",
     rarity:       row.rarity,
     cost,
     cost_neutral: row.cost_neutral ?? 0,
@@ -28,7 +29,7 @@ export function buildCardObject(row) {
     atk:          row.atk  ?? 0,
     def:          row.def  ?? 0,
     text:         row.card_text ?? "",
-    image:        `assets/cards/${row.id}.png`
+    image:        `assets/cards/${String(row.id).padStart(3, '0')}.png`
   };
 }
 
