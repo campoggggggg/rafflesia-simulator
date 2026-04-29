@@ -69,7 +69,6 @@ export function renderSettingsScreen() {
 
   resetBtn.addEventListener("click", () => {
     AppState.settings = {
-      playerName:     "Duelist",
       musicVolume:    50,
       sfxVolume:      50,
       theme:          "dark",

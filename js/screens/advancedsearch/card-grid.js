@@ -8,7 +8,7 @@ import { db }             from '../../core/supabase-client.js';
 import { FilterManager }  from './filter-manager.js';
 import { buildCardObject } from '../../data/cards.js';
 
-const AS_PER_PAGE = 24;
+const AS_PER_PAGE = 30;
 
 export const CardGrid = {
   page:    1,

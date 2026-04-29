@@ -19,118 +19,114 @@ export function renderAuthScreen() {
   const screen = document.getElementById("screen-auth");
 
   screen.innerHTML = `
-    <h2 class="page-title">Account</h2>
-    <p class="page-subtitle">Login to register your decks and play with friends (wip).</p>
+    <div class="auth-split">
 
-    <div class="auth-tabs">
-      <button class="auth-tab active" id="loginTab">Login</button>
-      <button class="auth-tab"        id="registerTab">Register</button>
+      <div class="auth-left-panel">
+        <div class="auth-logo-row">
+          <img src="assets/rafflesia-logo.png" alt="Rafflesia TCG" class="auth-logo-img">
+        </div>
+
+        <!-- LOGIN -->
+        <div class="auth-form-area" id="authLoginArea">
+          <h1 class="auth-welcome-title">Welcome Back to Rafflesia!</h1>
+          <p class="auth-welcome-sub">Please log in to your account.</p>
+
+          <div class="auth-field">
+            <label for="loginIdentifier">Email or Username</label>
+            <input class="input auth-input" type="text" id="loginIdentifier"
+              placeholder="email or username" autocomplete="username" />
+          </div>
+
+          <div class="auth-field">
+            <label for="loginPassword">Password</label>
+            <div class="auth-eye-wrap">
+              <input class="input auth-input" type="password" id="loginPassword"
+                placeholder="••••••••" autocomplete="current-password" />
+              <button class="eye-btn" id="loginEyeBtn" tabindex="-1">👁</button>
+            </div>
+          </div>
+
+          <div class="auth-options-row">
+            <label class="auth-remember" for="rememberMe">
+              <input type="checkbox" id="rememberMe" />
+              Remember me
+            </label>
+          </div>
+
+          <p class="auth-msg" id="loginMsg" style="min-height:18px; margin-bottom:8px;"></p>
+          <button class="auth-btn-primary" id="loginBtn">Login</button>
+          <button class="auth-btn-secondary" id="goToRegisterBtn">Create account</button>
+        </div>
+
+        <!-- REGISTER -->
+        <div class="auth-form-area" id="authRegisterArea" style="display:none;">
+          <h1 class="auth-welcome-title">Create Account</h1>
+          <p class="auth-welcome-sub">Join Rafflesia TCG and build your deck.</p>
+
+          <div class="auth-field">
+            <label for="regUsername">Username</label>
+            <input class="input auth-input" type="text" id="regUsername"
+              placeholder="Make it memorable" autocomplete="username" />
+            <p id="usernameMsg" class="auth-msg" style="margin-top:4px; font-size:12px;"></p>
+          </div>
+
+          <div class="auth-field">
+            <label for="regEmail">Email</label>
+            <input class="input auth-input" type="email" id="regEmail"
+              placeholder="email@example.com" autocomplete="email" />
+          </div>
+
+          <div class="auth-field">
+            <label for="regPassword">Password</label>
+            <div class="auth-eye-wrap">
+              <input class="input auth-input" type="password" id="regPassword"
+                placeholder="Min 8 chars" autocomplete="new-password" />
+              <button class="eye-btn" id="regEyeBtn" tabindex="-1">👁</button>
+            </div>
+          </div>
+
+          <ul class="password-rules" id="passwordRules">
+            ${PASSWORD_RULES.map((r, i) => `
+              <li class="rule-item" id="rule-${i}">
+                <span class="rule-icon">✗</span> ${r.label}
+              </li>
+            `).join("")}
+          </ul>
+
+          <div class="auth-field">
+            <label for="regPasswordConfirm">Confirm Password</label>
+            <div class="auth-eye-wrap">
+              <input class="input auth-input" type="password" id="regPasswordConfirm"
+                placeholder="Repeat password" autocomplete="new-password" />
+              <button class="eye-btn" id="regEyeBtn2" tabindex="-1">👁</button>
+            </div>
+            <p id="confirmMsg" class="auth-msg" style="margin-top:4px;"></p>
+          </div>
+
+          <p class="auth-msg" id="registerMsg" style="min-height:18px; margin-bottom:8px;"></p>
+          <button class="auth-btn-primary" id="registerBtn" disabled>Create account</button>
+          <button class="auth-btn-secondary" id="backToLoginBtn">Back to Login</button>
+        </div>
+
+        <p class="auth-disclaimer">By creating an account you agree to our terms and data policy.</p>
+      </div>
+
+      <div class="auth-right-panel">
+        <img class="auth-bg-img" src="assets/login.jpg" alt="" />
+        <div class="auth-glass-overlay"></div>
+      </div>
+
     </div>
-
-    <!-- LOGIN -->
-    <div class="card-panel" id="loginForm">
-      <div class="setting-row">
-        <label for="loginIdentifier">Username or Email</label>
-        <input class="input" type="text" id="loginIdentifier" placeholder="username or email@example.com" autocomplete="username" />
-      </div>
-      <div class="setting-row">
-        <label for="loginPassword">Password</label>
-        <div class="input-eye-wrap">
-          <input class="input" type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" />
-          <button class="eye-btn" id="loginEyeBtn" tabindex="-1">👁</button>
-        </div>
-      </div>
-      <div class="row" style="margin-top: 20px;">
-        <button class="primary-btn" id="loginBtn">Login</button>
-        <p id="loginMsg" class="auth-msg"></p>
-      </div>
-    </div>
-
-    <!-- REGISTER -->
-    <div class="card-panel" id="registerForm" style="display: none;">
-      <div class="setting-row">
-        <label for="regUsername">Username</label>
-        <div style="display:flex; flex-direction:column; flex:1; min-width:160px; gap:4px;">
-          <input class="input" type="text" id="regUsername" placeholder="Make it memorable" autocomplete="username" />
-          <p id="usernameMsg" class="auth-msg" style="margin:0; font-size:12px;"></p>
-        </div>
-      </div>
-      <div class="setting-row">
-        <label for="regEmail">Email</label>
-        <input class="input" type="email" id="regEmail" placeholder="email@example.com" autocomplete="email" />
-      </div>
-      <div class="setting-row">
-        <label for="regPassword">Password</label>
-        <div class="input-eye-wrap">
-          <input class="input" type="password" id="regPassword" placeholder="Min 8 chars" autocomplete="new-password" />
-          <button class="eye-btn" id="regEyeBtn" tabindex="-1">👁</button>
-        </div>
-      </div>
-
-      <ul class="password-rules" id="passwordRules">
-        ${PASSWORD_RULES.map((r, i) => `
-          <li class="rule-item" id="rule-${i}">
-            <span class="rule-icon">✗</span> ${r.label}
-          </li>
-        `).join("")}
-      </ul>
-
-      <div class="setting-row">
-        <label for="regPasswordConfirm">Confirm password</label>
-        <div class="input-eye-wrap">
-          <input class="input" type="password" id="regPasswordConfirm" placeholder="Repeat password" autocomplete="new-password" />
-          <button class="eye-btn" id="regEyeBtn2" tabindex="-1">👁</button>
-        </div>
-      </div>
-      <p id="confirmMsg" class="auth-msg" style="margin-top:4px;"></p>
-
-      <div class="row" style="margin-top: 20px;">
-        <button class="primary-btn" id="registerBtn" disabled>Create account</button>
-        <p id="registerMsg" class="auth-msg"></p>
-      </div>
-    </div>
-
-    <style>
-      .input-eye-wrap {
-        position: relative; display: flex; align-items: center;
-        flex: 1; min-width: 160px;
-      }
-      .input-eye-wrap .input { width: 100%; padding-right: 42px; box-sizing: border-box; }
-      .eye-btn {
-        position: absolute; right: 10px; background: transparent; border: none;
-        cursor: pointer; font-size: 16px; padding: 0; opacity: 0.5;
-        transition: opacity 0.18s; line-height: 1;
-      }
-      .eye-btn:hover { opacity: 1; }
-      .password-rules {
-        list-style: none; padding: 10px 0 6px; margin: 0;
-        display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px;
-      }
-      .rule-item {
-        font-size: 12px; color: var(--text-secondary);
-        display: flex; align-items: center; gap: 5px; transition: color 0.18s;
-      }
-      .rule-item.ok { color: var(--success, #4ade80); }
-      .rule-icon {
-        font-style: normal; font-weight: 700; font-size: 13px;
-        color: var(--error, #ef4444); width: 14px; text-align: center;
-      }
-      .rule-item.ok .rule-icon { color: var(--success, #4ade80); }
-    </style>
   `;
 
-  // Tab switch
-  document.getElementById("loginTab").onclick = () => {
-    document.getElementById("loginForm").style.display    = "";
-    document.getElementById("registerForm").style.display = "none";
-    document.getElementById("loginTab").classList.add("active");
-    document.getElementById("registerTab").classList.remove("active");
+  // Panel switch
+  document.getElementById("goToRegisterBtn").onclick = () => {
+    document.getElementById("authLoginArea").style.display = "none";
+    document.getElementById("authRegisterArea").style.display = "flex";
   };
-  document.getElementById("registerTab").onclick = () => {
-    document.getElementById("loginForm").style.display    = "none";
-    document.getElementById("registerForm").style.display = "";
-    document.getElementById("registerTab").classList.add("active");
-    document.getElementById("loginTab").classList.remove("active");
+  document.getElementById("backToLoginBtn").onclick = () => {
+    document.getElementById("authRegisterArea").style.display = "none";
+    document.getElementById("authLoginArea").style.display = "flex";
   };
 
   // Eye toggle
@@ -144,14 +140,14 @@ export function renderAuthScreen() {
   document.getElementById("regEyeBtn").onclick    = (e) => { e.preventDefault(); toggleEye("regPassword",        document.getElementById("regEyeBtn")); };
   document.getElementById("regEyeBtn2").onclick   = (e) => { e.preventDefault(); toggleEye("regPasswordConfirm", document.getElementById("regEyeBtn2")); };
 
-  // Stato validazione
+  // Register validation state
   const validity = { username: false, password: false, confirm: false };
   function updateRegisterBtn() {
     document.getElementById("registerBtn").disabled =
       !(validity.username && validity.password && validity.confirm);
   }
 
-  // Controllo username con debounce 600ms
+  // Username check with debounce 600ms
   let usernameTimer = null;
   document.getElementById("regUsername").oninput = () => {
     const msg      = document.getElementById("usernameMsg");
@@ -190,7 +186,7 @@ export function renderAuthScreen() {
     }, 600);
   };
 
-  // Validazione password live
+  // Live password validation
   function checkPasswordFields() {
     const password = document.getElementById("regPassword").value;
     const confirm  = document.getElementById("regPasswordConfirm").value;
@@ -231,15 +227,16 @@ export function renderAuthScreen() {
   document.getElementById("loginBtn").onclick = async () => {
     const identifier = document.getElementById("loginIdentifier").value.trim();
     const password   = document.getElementById("loginPassword").value;
+    const rememberMe = document.getElementById("rememberMe").checked;
     const msg        = document.getElementById("loginMsg");
     const btn        = document.getElementById("loginBtn");
 
-    msg.className = "auth-msg";
+    msg.className   = "auth-msg";
     msg.textContent = "";
 
     if (!identifier || !password) {
       msg.className   = "auth-msg error";
-      msg.textContent = "Enter username/email and password.";
+      msg.textContent = "Enter email/username and password.";
       return;
     }
 
@@ -247,7 +244,7 @@ export function renderAuthScreen() {
     btn.textContent = "Logging in…";
 
     try {
-      await signIn(identifier, password);
+      await signIn(identifier, password, rememberMe);
     } catch (err) {
       msg.className   = "auth-msg error";
       msg.textContent = err.message;
@@ -270,7 +267,6 @@ export function renderAuthScreen() {
     btn.textContent = "Creating account…";
 
     try {
-      // Doppio controllo race condition
       const available = await isUsernameAvailable(username);
       if (!available) {
         msg.className   = "auth-msg error";

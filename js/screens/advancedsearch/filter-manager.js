@@ -171,8 +171,8 @@ export const FilterManager = {
 
     document.querySelectorAll(".as-color-btn").forEach(b =>
       b.classList.toggle("active", s.colors.includes(b.dataset.color)));
-    document.querySelectorAll(".as-rarity-check").forEach(cb =>
-      { cb.checked = s.rarities.includes(cb.value); });
+    document.querySelectorAll(".as-rarity-btn").forEach(b =>
+      b.classList.toggle("active", s.rarities.includes(b.dataset.rarity)));
 
     renderTagList("as-types-tags",    s.types,    "types");
     renderTagList("as-subtypes-tags", s.subtypes, "subtypes");

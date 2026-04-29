@@ -4,7 +4,6 @@
 
 import { FilterManager, renderTagList, addTag, updateFilterBadge } from './filter-manager.js';
 import { CardGrid }        from './card-grid.js';
-import { AnalyticsPanel }  from './analytics-panel.js';
 import { ChartsModule }    from './charts.js';
 import { updateBackButtons } from '../../core/router.js';
 
@@ -13,210 +12,186 @@ export function renderAdvancedSearchScreen() {
   if (!screen) return;
 
   screen.innerHTML = `
-    <h2 class="page-title">Advanced search</h2>
-    <p class="page-subtitle">Analyze the entire pool of cards with filter and cool graphs.</p>
+<div class="as-root">
 
-    <div class="card-panel">
-      <button class="as-filters-toggle" id="as-filters-toggle">
-        <span id="as-toggle-label">▾ Filter</span>
-        <span class="as-filter-badge badge" id="as-filter-badge"></span>
-      </button>
+  <!-- ── LEFT: card grid (2/3) ──────────────────────────────── -->
+  <div class="as-left">
+    <h2 class="page-title" style="font-size:22px; margin:0 0 2px;">Advanced search</h2>
+    <p class="page-subtitle" style="margin:0 0 0; font-size:13px;">Analyze the entire card pool with filters and graphs.</p>
+    <div id="as-card-grid" class="as-card-grid">
+      <div class="as-state-msg">Set your filters and click <strong>Search</strong>.</div>
+    </div>
+    <div id="as-pagination" class="as-pagination"></div>
+  </div>
 
-      <div class="as-filters-body" id="as-filters-body">
+  <!-- ── RIGHT: filters + charts (1/3) ─────────────────────── -->
+  <div class="as-right">
 
-        <!-- Riga 1: Nome / Testo -->
-        <div class="as-filter-row">
-          <div class="as-filter-group" style="flex:1; min-width:200px;">
-            <div class="as-filter-header">
-              <span>Name</span>
-              <button class="as-reset-field" data-field="name" title="Reset">↺</button>
-            </div>
-            <input id="as-name-input" class="input" type="text" placeholder="Es: Edwin..." />
+    <!-- FILTERS -->
+    <div class="as-right-section">
+      <div class="as-section-title">Filters</div>
+
+      <!-- Name / Text -->
+      <div class="as-f-row">
+        <div class="db-fg">
+          <label class="db-fl">Name <button class="as-rst" data-field="name" title="Reset">↺</button></label>
+          <input id="as-name-input" class="db-fi" type="text" placeholder="name...">
+        </div>
+        <div class="db-fg">
+          <label class="db-fl">Card text <button class="as-rst" data-field="text" title="Reset">↺</button></label>
+          <input id="as-text-input" class="db-fi" type="text" placeholder="text...">
+        </div>
+      </div>
+
+      <!-- Type / Subtype -->
+      <div class="as-f-row">
+        <div class="db-fg">
+          <label class="db-fl">Type <button class="as-rst" data-field="types" title="Reset">↺</button></label>
+          <div class="db-range" style="gap:4px;">
+            <input id="as-type-input" class="db-fi" type="text" placeholder="minion…" list="as-type-dl" style="flex:1; min-width:0;">
+            <datalist id="as-type-dl">
+              <option value="Minion"><option value="Spell"><option value="Territory"><option value="Quest">
+            </datalist>
+            <button class="db-btn" id="as-type-add" style="padding:4px 8px; flex-shrink:0;">+</button>
           </div>
-          <div class="as-filter-group" style="flex:1; min-width:200px;">
-            <div class="as-filter-header">
-              <span>Card text</span>
-              <button class="as-reset-field" data-field="text" title="Reset">↺</button>
-            </div>
-            <input id="as-text-input" class="input" type="text" placeholder="Es: as an additional cost recycle 3 minion cards" />
+          <div class="as-tags-list" id="as-types-tags"></div>
+        </div>
+        <div class="db-fg">
+          <label class="db-fl">Subtype <button class="as-rst" data-field="subtypes" title="Reset">↺</button></label>
+          <div class="db-range" style="gap:4px;">
+            <input id="as-subtype-input" class="db-fi" type="text" placeholder="warrior…" list="as-subtype-dl" style="flex:1; min-width:0;">
+            <datalist id="as-subtype-dl"></datalist>
+            <button class="db-btn" id="as-subtype-add" style="padding:4px 8px; flex-shrink:0;">+</button>
+          </div>
+          <div class="as-tags-list" id="as-subtypes-tags"></div>
+        </div>
+      </div>
+
+      <!-- Colors -->
+      <div class="db-fg">
+        <label class="db-fl">Colors <button class="as-rst" data-field="colors" title="Reset">↺</button></label>
+        <div class="db-cpills" style="margin-top:3px;">
+          <button class="as-color-btn db-cpill" data-color="blue"      style="--pc:#336699" title="Blue"></button>
+          <button class="as-color-btn db-cpill" data-color="green"     style="--pc:#385400" title="Green"></button>
+          <button class="as-color-btn db-cpill" data-color="red"       style="--pc:#8A0000" title="Red"></button>
+          <button class="as-color-btn db-cpill" data-color="black"     style="--pc:#595959" title="Black"></button>
+          <button class="as-color-btn db-cpill" data-color="colorless" style="--pc:#A19993" title="Colorless"></button>
+        </div>
+      </div>
+
+      <!-- Neutral cost / Color cost -->
+      <div class="as-f-row">
+        <div class="db-fg">
+          <label class="db-fl">⬜ cost <button class="as-rst" data-field="cost" title="Reset">↺</button></label>
+          <div class="as-range-row">
+            <span class="as-range-val" id="as-neutral-min-lbl">0</span>
+            <input id="as-cost-neutral-min" type="range" min="0" max="20" value="0" step="1">
+            <span class="muted" style="font-size:10px;">–</span>
+            <input id="as-cost-neutral-max" type="range" min="0" max="20" value="20" step="1">
+            <span class="as-range-val" id="as-neutral-max-lbl">20</span>
           </div>
         </div>
-
-        <!-- Riga 2: Tipo / Sottotipo (tag-input) -->
-        <div class="as-filter-row">
-          <div class="as-filter-group" style="flex:1; min-width:220px;">
-            <div class="as-filter-header">
-              <span>Type</span>
-              <button class="as-reset-field" data-field="types" title="Reset">↺</button>
-            </div>
-            <div class="as-tag-row">
-              <input id="as-type-input" class="input" type="text"
-                     placeholder="Es: minion, spell…" list="as-type-dl" style="flex:1;">
-              <datalist id="as-type-dl">
-                <option value="Minion">
-                <option value="Spell">
-                <option value="Territory">
-                <option value="Quest">
-              </datalist>
-              <button class="secondary-btn" id="as-type-add">+ Add</button>
-            </div>
-            <div class="as-tags-list" id="as-types-tags"></div>
-          </div>
-          <div class="as-filter-group" style="flex:1; min-width:220px;">
-            <div class="as-filter-header">
-              <span>Subtype</span>
-              <button class="as-reset-field" data-field="subtypes" title="Reset">↺</button>
-            </div>
-            <div class="as-tag-row">
-              <input id="as-subtype-input" class="input" type="text"
-                     placeholder="Es: warrior, vampire…" list="as-subtype-dl" style="flex:1;">
-              <datalist id="as-subtype-dl"></datalist>
-              <button class="secondary-btn" id="as-subtype-add">+ Add</button>
-            </div>
-            <div class="as-tags-list" id="as-subtypes-tags"></div>
+        <div class="db-fg">
+          <label class="db-fl">🔵 cost</label>
+          <div class="as-range-row">
+            <span class="as-range-val" id="as-color-min-lbl">0</span>
+            <input id="as-cost-color-min" type="range" min="0" max="20" value="0" step="1">
+            <span class="muted" style="font-size:10px;">–</span>
+            <input id="as-cost-color-max" type="range" min="0" max="20" value="20" step="1">
+            <span class="as-range-val" id="as-color-max-lbl">20</span>
           </div>
         </div>
+      </div>
 
-        <!-- Riga 3: Costo neutro / Costo colore -->
-        <div class="as-filter-row">
-          <div class="as-filter-group" style="min-width:230px;">
-            <div class="as-filter-header">
-              <span>Neutral cost</span>
-              <button class="as-reset-field" data-field="cost" title="Reset">↺</button>
-            </div>
-            <div class="as-range-row">
-              <span class="as-range-val" id="as-neutral-min-lbl">0</span>
-              <input id="as-cost-neutral-min" type="range" min="0" max="20" value="0" step="1">
-              <span class="muted" style="font-size:11px;">–</span>
-              <input id="as-cost-neutral-max" type="range" min="0" max="20" value="20" step="1">
-              <span class="as-range-val" id="as-neutral-max-lbl">20</span>
-            </div>
-          </div>
-          <div class="as-filter-group" style="min-width:230px;">
-            <div class="as-filter-header"><span>Color cost</span></div>
-            <div class="as-range-row">
-              <span class="as-range-val" id="as-color-min-lbl">0</span>
-              <input id="as-cost-color-min" type="range" min="0" max="20" value="0" step="1">
-              <span class="muted" style="font-size:11px;">–</span>
-              <input id="as-cost-color-max" type="range" min="0" max="20" value="20" step="1">
-              <span class="as-range-val" id="as-color-max-lbl">20</span>
-            </div>
+      <!-- ATK / DEF -->
+      <div class="as-f-row">
+        <div class="db-fg">
+          <label class="db-fl">ATK <button class="as-rst" data-field="atk" title="Reset">↺</button></label>
+          <div class="db-range">
+            <input id="as-atk-min" class="db-fi db-mini" type="number" placeholder="min" min="0">
+            <span class="db-range-sep">–</span>
+            <input id="as-atk-max" class="db-fi db-mini" type="number" placeholder="max" min="0">
           </div>
         </div>
-
-        <!-- Riga 4: ATK / DEF / Keywords -->
-        <div class="as-filter-row">
-          <div class="as-filter-group">
-            <div class="as-filter-header">
-              <span>ATK</span>
-              <button class="as-reset-field" data-field="atk" title="Reset">↺</button>
-            </div>
-            <div class="row" style="gap:6px;">
-              <input id="as-atk-min" class="input" type="number" placeholder="Min" min="0" style="width:72px;">
-              <span class="muted">–</span>
-              <input id="as-atk-max" class="input" type="number" placeholder="Max" min="0" style="width:72px;">
-            </div>
-          </div>
-          <div class="as-filter-group">
-            <div class="as-filter-header">
-              <span>DEF</span>
-              <button class="as-reset-field" data-field="def" title="Reset">↺</button>
-            </div>
-            <div class="row" style="gap:6px;">
-              <input id="as-def-min" class="input" type="number" placeholder="Min" min="0" style="width:72px;">
-              <span class="muted">–</span>
-              <input id="as-def-max" class="input" type="number" placeholder="Max" min="0" style="width:72px;">
-            </div>
-          </div>
-          <div class="as-filter-group" style="flex:1; min-width:220px;">
-            <div class="as-filter-header">
-              <span>Keywords</span>
-              <button class="as-reset-field" data-field="keywords" title="Reset">↺</button>
-            </div>
-            <div class="as-tag-row">
-              <input id="as-keyword-input" class="input" type="text"
-                     placeholder="Es: stealth, protector…" list="as-keyword-dl" style="flex:1;">
-              <datalist id="as-keyword-dl"></datalist>
-              <button class="secondary-btn" id="as-keyword-add">+ Aggiungi</button>
-            </div>
-            <div class="as-tags-list" id="as-keywords-tags"></div>
+        <div class="db-fg">
+          <label class="db-fl">DEF <button class="as-rst" data-field="def" title="Reset">↺</button></label>
+          <div class="db-range">
+            <input id="as-def-min" class="db-fi db-mini" type="number" placeholder="min" min="0">
+            <span class="db-range-sep">–</span>
+            <input id="as-def-max" class="db-fi db-mini" type="number" placeholder="max" min="0">
           </div>
         </div>
+      </div>
 
-        <!-- Riga 5 (fondo): Colori / Rarità / Set -->
-        <div class="as-filter-row">
-          <div class="as-filter-group" style="min-width:220px;">
-            <div class="as-filter-header">
-              <span>Colors</span>
-              <button class="as-reset-field" data-field="colors" title="Reset">↺</button>
-            </div>
-            <div class="row" style="gap:6px; flex-wrap:wrap;">
-              <button class="as-color-btn" data-color="blue"      title="Blue">Blue</button>
-              <button class="as-color-btn" data-color="green"     title="Green">Green</button>
-              <button class="as-color-btn" data-color="red"       title="Red">Red</button>
-              <button class="as-color-btn" data-color="black"     title="Black">Black</button>
-              <button class="as-color-btn" data-color="colorless" title="Colorless">∅</button>
-            </div>
-          </div>
-          <div class="as-filter-group">
-            <div class="as-filter-header">
-              <span>Rarity</span>
-              <button class="as-reset-field" data-field="rarities" title="Reset">↺</button>
-            </div>
-            <label class="as-rarity-check-label">
-              <input class="as-rarity-check" type="checkbox" value="Legendary"> Legendary
-            </label>
-            <label class="as-rarity-check-label">
-              <input class="as-rarity-check" type="checkbox" value="Normal"> Normal
-            </label>
-          </div>
-          <div class="as-filter-group" style="min-width:160px;">
-            <div class="as-filter-header">
-              <span>Set</span>
-              <button class="as-reset-field" data-field="setNum" title="Reset">↺</button>
-            </div>
-            <select id="as-set-select" class="select"><option value="">Tutti i set</option></select>
+      <!-- Keywords -->
+      <div class="db-fg">
+        <label class="db-fl">Keywords <button class="as-rst" data-field="keywords" title="Reset">↺</button></label>
+        <div class="db-range" style="gap:4px;">
+          <input id="as-keyword-input" class="db-fi" type="text" placeholder="stealth…" list="as-keyword-dl" style="flex:1; min-width:0;">
+          <datalist id="as-keyword-dl"></datalist>
+          <button class="db-btn" id="as-keyword-add" style="padding:4px 8px; flex-shrink:0;">+</button>
+        </div>
+        <div class="as-tags-list" id="as-keywords-tags"></div>
+      </div>
+
+      <!-- Rarity / Set -->
+      <div class="as-f-row">
+        <div class="db-fg">
+          <label class="db-fl">Rarity <button class="as-rst" data-field="rarities" title="Reset">↺</button></label>
+          <div class="db-mode" id="as-rarity-btns">
+            <button class="db-mbtn as-rarity-btn" data-rarity="Legendary">◆ Leg.</button>
+            <button class="db-mbtn as-rarity-btn" data-rarity="Normal">● Com.</button>
           </div>
         </div>
-
-        <!-- Barra azioni -->
-        <div class="as-search-bar">
-          <button class="primary-btn" id="as-search-btn">Search</button>
-          <button class="secondary-btn" id="as-reset-all-btn">Reset</button>
-          <span class="as-query-debug" id="as-query-debug"></span>
+        <div class="db-fg">
+          <label class="db-fl">Set <button class="as-rst" data-field="setNum" title="Reset">↺</button></label>
+          <select id="as-set-select" class="db-fi"><option value="">All sets</option></select>
         </div>
+      </div>
+
+      <!-- Search + Reset -->
+      <div style="display:flex; gap:8px; padding-top:10px; border-top:1px solid var(--border);">
+        <button class="db-btn db-btn-primary" id="as-search-btn" style="flex:1;">Search</button>
+        <button class="db-btn" id="as-reset-all-btn">Reset</button>
       </div>
     </div>
 
-    <!-- Griglia carte -->
-    <div style="margin-top:20px;">
-      <h3 style="margin:0 0 4px; font-family:'Cinzel Decorative',serif; font-size:15px; color:var(--parchment);">
-        Results
-      </h3>
-      <div id="as-card-grid" class="as-card-grid">
-        <div class="as-state-msg">Set your filter and click on <strong>Search</strong>.</div>
+    <!-- CHARTS -->
+    <div class="as-right-section as-charts-section">
+      <div class="as-f-row">
+        <div class="db-fg">
+          <label class="db-fl">Graph type</label>
+          <select class="db-fi" id="as-chart-type">
+            <option value="">— Type —</option>
+            <option value="bar">Bar</option>
+            <option value="pie">Pie</option>
+            <option value="stacked">Stacked</option>
+            <option value="scatter">Scatter</option>
+          </select>
+        </div>
+        <div class="db-fg">
+          <label class="db-fl">Variable</label>
+          <select class="db-fi" id="as-chart-var">
+            <option value="">— Variable —</option>
+          </select>
+        </div>
       </div>
-      <div id="as-pagination" class="as-pagination"></div>
+      <div id="chart-container" class="as-chart-container">
+        <p class="muted" style="text-align:center; font-size:12px;">Select a graph type to start analyzing.</p>
+      </div>
     </div>
 
-    <!-- Analytics -->
-    <div id="as-analytics-container" style="margin-top:28px;"></div>
+  </div>
+</div>
   `;
 
-  document.getElementById("as-analytics-container").innerHTML = AnalyticsPanel.render();
   ChartsModule.init();
 
   CardGrid.page = 1;
 
   FilterManager.loadLookups();
 
-  // ── Listeners ─────────────────────────────────────────────
-
-  document.getElementById("as-filters-toggle").onclick = () => {
-    const body = document.getElementById("as-filters-body");
-    const open = body.classList.toggle("collapsed") === false;
-    document.getElementById("as-toggle-label").textContent = open ? "▾ Close filters" : "▸ Open filters";
-  };
+  // ── Text inputs ────────────────────────────────────────────────
 
   const bindText = (id, field) => {
     const el = document.getElementById(id);
@@ -225,17 +200,22 @@ export function renderAdvancedSearchScreen() {
   bindText("as-name-input", "name");
   bindText("as-text-input", "text");
 
-  // Tipo (tag-input)
+  // ── Tag inputs (Type, Subtype, Keywords) ───────────────────────
+
   const typeAdd = () => addTag("as-type-input", "as-types-tags", "types", FilterManager.allTypes);
-  document.getElementById("as-type-add").onclick    = typeAdd;
+  document.getElementById("as-type-add").onclick     = typeAdd;
   document.getElementById("as-type-input").onkeydown = e => { if (e.key === "Enter") typeAdd(); };
 
-  // Sottotipo (tag-input)
   const stAdd = () => addTag("as-subtype-input", "as-subtypes-tags", "subtypes", FilterManager.allSubtypes);
-  document.getElementById("as-subtype-add").onclick    = stAdd;
+  document.getElementById("as-subtype-add").onclick     = stAdd;
   document.getElementById("as-subtype-input").onkeydown = e => { if (e.key === "Enter") stAdd(); };
 
-  // Range costi
+  const kwAdd = () => addTag("as-keyword-input", "as-keywords-tags", "keywords", FilterManager.allKeywords);
+  document.getElementById("as-keyword-add").onclick     = kwAdd;
+  document.getElementById("as-keyword-input").onkeydown = e => { if (e.key === "Enter") kwAdd(); };
+
+  // ── Range sliders ──────────────────────────────────────────────
+
   const makeRangeSync = (minId, maxId, minLblId, maxLblId, minKey, maxKey) => {
     const minEl = document.getElementById(minId);
     const maxEl = document.getElementById(maxId);
@@ -256,6 +236,8 @@ export function renderAdvancedSearchScreen() {
   makeRangeSync("as-cost-neutral-min","as-cost-neutral-max","as-neutral-min-lbl","as-neutral-max-lbl","costNeutralMin","costNeutralMax");
   makeRangeSync("as-cost-color-min",  "as-cost-color-max",  "as-color-min-lbl",  "as-color-max-lbl",  "costColorMin",  "costColorMax");
 
+  // ── Number inputs (ATK / DEF) ──────────────────────────────────
+
   const bindNum = (id, field) => {
     const el = document.getElementById(id);
     if (el) el.oninput = () => { FilterManager.state[field] = el.value; updateFilterBadge(); };
@@ -263,12 +245,8 @@ export function renderAdvancedSearchScreen() {
   bindNum("as-atk-min", "atkMin"); bindNum("as-atk-max", "atkMax");
   bindNum("as-def-min", "defMin"); bindNum("as-def-max", "defMax");
 
-  // Keywords (tag-input)
-  const kwAdd = () => addTag("as-keyword-input", "as-keywords-tags", "keywords", FilterManager.allKeywords);
-  document.getElementById("as-keyword-add").onclick    = kwAdd;
-  document.getElementById("as-keyword-input").onkeydown = e => { if (e.key === "Enter") kwAdd(); };
+  // ── Color buttons ──────────────────────────────────────────────
 
-  // Colori
   document.querySelectorAll(".as-color-btn").forEach(btn => {
     btn.onclick = () => {
       const c = btn.dataset.color, arr = FilterManager.state.colors;
@@ -279,41 +257,43 @@ export function renderAdvancedSearchScreen() {
     };
   });
 
-  // Rarità
-  document.querySelectorAll(".as-rarity-check").forEach(cb => {
-    cb.onchange = () => {
+  // ── Rarity buttons ─────────────────────────────────────────────
+
+  document.querySelectorAll(".as-rarity-btn").forEach(btn => {
+    btn.onclick = () => {
+      const r   = btn.dataset.rarity;
       const arr = FilterManager.state.rarities;
-      if (cb.checked) { if (!arr.includes(cb.value)) arr.push(cb.value); }
-      else { const i = arr.indexOf(cb.value); if (i >= 0) arr.splice(i, 1); }
+      const i   = arr.indexOf(r);
+      if (i >= 0) arr.splice(i, 1); else arr.push(r);
+      btn.classList.toggle("active", arr.includes(r));
       updateFilterBadge();
     };
   });
 
-  // Set
+  // ── Set select ─────────────────────────────────────────────────
+
   document.getElementById("as-set-select").onchange = e => {
     FilterManager.state.setNum = e.target.value;
     updateFilterBadge();
   };
 
-  // Reset singoli campi
-  document.querySelectorAll(".as-reset-field").forEach(btn => {
+  // ── Reset individual fields ────────────────────────────────────
+
+  document.querySelectorAll(".as-rst").forEach(btn => {
     btn.onclick = e => {
       e.stopPropagation();
       FilterManager.resetField(btn.dataset.field);
     };
   });
 
-  // Reset tutto
-  document.getElementById("as-reset-all-btn").onclick = () => {
-    FilterManager.reset();
-    document.getElementById("as-query-debug").textContent = "";
-  };
+  // ── Reset all ──────────────────────────────────────────────────
 
-  // Cerca
+  document.getElementById("as-reset-all-btn").onclick = () => FilterManager.reset();
+
+  // ── Search ─────────────────────────────────────────────────────
+
   document.getElementById("as-search-btn").onclick = () => {
     CardGrid.page = 1;
-    const dbg = document.getElementById("as-query-debug");
-    if (dbg) dbg.textContent = FilterManager.buildQueryParams() || "";
     CardGrid.fetchAndRender();
     ChartsModule.notifySearchComplete();
   };

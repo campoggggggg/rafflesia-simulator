@@ -95,7 +95,7 @@ export function startAIGame(deck, onExit) {
     log:                [],
     globalStack:        [],
     player: emptyPlayerState(
-      AppState.settings.playerName || "Duelist",
+      AppState.username || "Guest",
       getDefaultAvatar("player"),
       deck.commanderId,
       deck.cards,

@@ -2,7 +2,7 @@
 // auth/auth.js — Autenticazione via Supabase Auth.
 // ============================================================
 
-import { db }       from '../core/supabase-client.js';
+import { db } from '../core/supabase-client.js';
 import { AppState } from '../core/state.js';
 
 // Controlla se uno username è già preso (query pubblica su profiles).
@@ -34,7 +34,13 @@ export async function signUp(email, password, username) {
 // Login con email oppure username.
 // Se l'input non contiene "@" lo trattiamo come username
 // e cerchiamo l'email corrispondente in profiles.
-export async function signIn(emailOrUsername, password) {
+export async function signIn(emailOrUsername, password, rememberMe = false) {
+  if (rememberMe) {
+    localStorage.setItem('rafflesia_remember_me', 'true');
+  } else {
+    localStorage.removeItem('rafflesia_remember_me');
+  }
+
   let email = emailOrUsername.trim();
 
   if (!email.includes("@")) {
@@ -87,6 +93,7 @@ export async function ensureProfile(user) {
 }
 
 export async function signOut() {
+  localStorage.removeItem('rafflesia_remember_me');
   const { error } = await db.auth.signOut();
   if (error) throw error;
 }

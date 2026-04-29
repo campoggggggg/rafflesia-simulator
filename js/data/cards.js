@@ -12,6 +12,7 @@ export let CardDatabase = [];
 
 export function buildCardObject(row) {
   const colors = (row.card_to_colors ?? []).map(r => r.colors?.name).filter(Boolean);
+  const keywords = (row.card_to_keywords ?? []).map(r => r.keywords?.name).filter(Boolean);
   const color  = colors[0] ?? "colorless";
   const cost   = (row.cost_neutral ?? 0) + (row.cost_color ?? 0);
 
@@ -29,6 +30,8 @@ export function buildCardObject(row) {
     atk:          row.atk  ?? 0,
     def:          row.def  ?? 0,
     text:         row.card_text ?? "",
+    keywords,
+    setNum:       row.set_num ?? "",
     image:        `assets/cards/${String(row.id).padStart(3, '0')}.png`
   };
 }
@@ -37,7 +40,7 @@ export async function syncCardsFromSupabase() {
   try {
     const { data, error } = await db
       .from("cards")
-      .select("*, card_to_colors(colors(name))")
+      .select("*, card_to_colors(colors(name)), card_to_keywords(keywords(name))")
       .order("id");
 
     if (error) throw error;

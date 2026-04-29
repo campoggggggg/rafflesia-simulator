@@ -6,8 +6,8 @@
 // come globali (window.Chart, window.ChartDataLabels).
 // ============================================================
 
-import { db }            from '../../core/supabase-client.js';
 import { FilterManager } from './filter-manager.js';
+import { CardDatabase }  from '../../data/cards.js';
 
 Chart.register(ChartDataLabels);
 
@@ -16,7 +16,7 @@ const COLOR_HEX = {
   blue:      '#4a90d9',
   green:     '#4a9a5a',
   red:       '#c04040',
-  black:     '#8050a0',
+  black:     '#0a0a0a',
   colorless: '#7f8c8d',
 };
 
@@ -66,27 +66,26 @@ function _intersect(existing, newSet) {
 export const ChartsModule = {
   _chart: null,
 
+  _VAR_OPTS: {
+    bar:     [{v:"cost",l:"Cost"},{v:"color",l:"Color"},{v:"type",l:"Type"},{v:"atk",l:"ATK (Minion)"},{v:"def",l:"DEF (Minion)"}],
+    pie:     [{v:"color",l:"Color"},{v:"type",l:"Type"},{v:"rarity",l:"Rarity"}],
+    stacked: [{v:"cost_color",l:"Cost × Color"},{v:"cost_type",l:"Cost × Type"},{v:"type_color",l:"Type × Color"}],
+    scatter: [{v:"cost_atk",l:"Cost × ATK (Minion)"},{v:"cost_def",l:"Cost × DEF (Minion)"},{v:"atk_def",l:"ATK × DEF (Minion)"}],
+  },
+
   init() {
-    const typeSel    = document.getElementById("as-chart-type");
-    const barXSel    = document.getElementById("as-bar-x");
-    const pieVarSel  = document.getElementById("as-pie-var");
-    const stackedSel = document.getElementById("as-stacked-pair");
-    const scatterSel = document.getElementById("as-scatter-pair");
-    if (!typeSel) return;
+    const typeSel = document.getElementById("as-chart-type");
+    const varSel  = document.getElementById("as-chart-var");
+    if (!typeSel || !varSel) return;
 
     typeSel.onchange = () => {
-      const type = typeSel.value;
-      if (barXSel)    barXSel.style.display    = type === "bar"     ? "" : "none";
-      if (pieVarSel)  pieVarSel.style.display   = type === "pie"     ? "" : "none";
-      if (stackedSel) stackedSel.style.display  = type === "stacked" ? "" : "none";
-      if (scatterSel) scatterSel.style.display  = type === "scatter" ? "" : "none";
-      this._tryRender();
+      const opts = this._VAR_OPTS[typeSel.value] ?? [];
+      varSel.innerHTML = `<option value="">— Variable —</option>` +
+        opts.map(o => `<option value="${o.v}">${o.l}</option>`).join("");
+      this._showPlaceholder(typeSel.value ? "Select a variable." : "Select a graph type to start analyzing.");
     };
 
-    if (barXSel)    barXSel.onchange    = () => this._tryRender();
-    if (pieVarSel)  pieVarSel.onchange  = () => this._tryRender();
-    if (stackedSel) stackedSel.onchange = () => this._tryRender();
-    if (scatterSel) scatterSel.onchange = () => this._tryRender();
+    varSel.onchange = () => this._tryRender();
   },
 
   notifySearchComplete() {
@@ -97,100 +96,56 @@ export const ChartsModule = {
 
   async _tryRender() {
     const type = document.getElementById("as-chart-type")?.value;
+    const xVar = document.getElementById("as-chart-var")?.value;
 
-    if (!type) {
-      this._showPlaceholder("Select a type of graph to start analyzing...");
-      return;
-    }
+    if (!type) { this._showPlaceholder("Select a graph type to start analyzing."); return; }
+    if (!xVar) { this._showPlaceholder("Select a variable."); return; }
 
-    if (type === "bar") {
-      const xVar = document.getElementById("as-bar-x")?.value;
-      if (!xVar) { this._showPlaceholder("Select a variable for the X axis."); return; }
-      this._showLoading();
-      const cards = await this._fetchAllCards();
-      this._renderBar(cards, xVar);
-      return;
-    }
+    this._showLoading();
+    const cards = await this._fetchAllCards();
 
-    if (type === "pie") {
-      const xVar = document.getElementById("as-pie-var")?.value;
-      if (!xVar) { this._showPlaceholder("Select a variable for the pie chart."); return; }
-      this._showLoading();
-      const cards = await this._fetchAllCards();
-      this._renderPie(cards, xVar);
-      return;
-    }
-
-    if (type === "stacked") {
-      const pair = document.getElementById("as-stacked-pair")?.value;
-      if (!pair) { this._showPlaceholder("Select a variable pair for the stacked chart."); return; }
-      this._showLoading();
-      const cards = await this._fetchAllCards();
-      this._renderStacked(cards, pair);
-      return;
-    }
-
-    if (type === "scatter") {
-      const pair = document.getElementById("as-scatter-pair")?.value;
-      if (!pair) { this._showPlaceholder("Select a variable pair for the scatter chart."); return; }
-      this._showLoading();
-      const cards = await this._fetchAllCards();
-      this._renderBubble(cards, pair);
-      return;
-    }
-
-    this._showPlaceholder("This graph type is not yet implemented.");
+    if      (type === "bar")     this._renderBar(cards, xVar);
+    else if (type === "pie")     this._renderPie(cards, xVar);
+    else if (type === "stacked") this._renderStacked(cards, xVar);
+    else if (type === "scatter") this._renderBubble(cards, xVar);
   },
 
   // ── Fetch ───────────────────────────────────────────────────
 
   async _fetchAllCards() {
-    const { colors, keywords, subtypes } = FilterManager.state;
-    let mustIds = null;
-
-    if (colors.length > 0) {
-      mustIds = _intersect(mustIds, await _colorCardIds(colors));
-    }
-    if (keywords.length > 0) {
-      mustIds = _intersect(mustIds, await _joinCardIds("keywords", "keyword_id", "card_to_keywords", keywords));
-    }
-    if (subtypes.length > 0) {
-      mustIds = _intersect(mustIds, await _joinCardIds("subtypes", "subtype_id", "card_to_subtypes", subtypes));
-    }
-
-    if (mustIds !== null && mustIds.length === 0) return [];
-
     const s = FilterManager.state;
-    let q = db.from("cards")
-      .select("cost_neutral, cost_color, type_line, rarity, atk, def, card_to_colors(colors(name))")
-      .limit(2000);
 
-    if (s.name)              q = q.ilike("name",      `%${s.name}%`);
-    if (s.text)              q = q.ilike("card_text", `%${s.text}%`);
-    if (s.types.length > 0)    q = q.in("type_line", s.types);
-    if (s.rarities.length > 0) q = q.in("rarity",    s.rarities);
-    if (s.costNeutralMin > 0)  q = q.gte("cost_neutral", s.costNeutralMin);
-    if (s.costNeutralMax < 20) q = q.lte("cost_neutral", s.costNeutralMax);
-    if (s.costColorMin   > 0)  q = q.gte("cost_color",   s.costColorMin);
-    if (s.costColorMax   < 20) q = q.lte("cost_color",   s.costColorMax);
-    if (s.atkMin !== "")       q = q.gte("atk", Number(s.atkMin));
-    if (s.atkMax !== "")       q = q.lte("atk", Number(s.atkMax));
-    if (s.defMin !== "")       q = q.gte("def", Number(s.defMin));
-    if (s.defMax !== "")       q = q.lte("def", Number(s.defMax));
-    if (s.setNum)              q = q.eq("set_num", s.setNum);
-    if (mustIds !== null)      q = q.in("id", mustIds);
-
-    const { data, error } = await q;
-    if (error) { console.error("ChartsModule fetch:", error); return []; }
-
-    return (data ?? []).map(row => ({
-      color:  (row.card_to_colors ?? []).map(r => r.colors?.name).filter(Boolean)[0] ?? "colorless",
-      type:   row.type_line,
-      rarity: row.rarity,
-      cost:   (row.cost_neutral ?? 0) + (row.cost_color ?? 0),
-      atk:    row.atk ?? 0,
-      def:    row.def ?? 0,
-    }));
+    return CardDatabase
+      .filter(card => {
+        if (s.name && !card.name.toLowerCase().includes(s.name.toLowerCase())) return false;
+        if (s.text && !String(card.text ?? "").toLowerCase().includes(s.text.toLowerCase())) return false;
+        if (s.types.length > 0 && !s.types.includes(card.type)) return false;
+        if (s.rarities.length > 0 && !s.rarities.includes(card.rarity)) return false;
+        if (s.colors.length > 0 && !s.colors.includes(card.color)) return false;
+        if (s.costNeutralMin > 0 && (card.cost_neutral ?? 0) < s.costNeutralMin) return false;
+        if (s.costNeutralMax < 20 && (card.cost_neutral ?? 0) > s.costNeutralMax) return false;
+        if (s.costColorMin > 0 && (card.cost_color ?? 0) < s.costColorMin) return false;
+        if (s.costColorMax < 20 && (card.cost_color ?? 0) > s.costColorMax) return false;
+        if (s.atkMin !== "" && (card.atk ?? 0) < Number(s.atkMin)) return false;
+        if (s.atkMax !== "" && (card.atk ?? 0) > Number(s.atkMax)) return false;
+        if (s.defMin !== "" && (card.def ?? 0) < Number(s.defMin)) return false;
+        if (s.defMax !== "" && (card.def ?? 0) > Number(s.defMax)) return false;
+        if (s.subtypes.length > 0 && !s.subtypes.includes(card.subtype)) return false;
+        if (s.keywords.length > 0) {
+          const hasKeyword = s.keywords.some(keyword => (card.keywords ?? []).includes(keyword));
+          if (!hasKeyword) return false;
+        }
+        if (s.setNum && String(card.setNum) !== String(s.setNum)) return false;
+        return true;
+      })
+      .map(card => ({
+        color:  card.color,
+        type:   card.type,
+        rarity: card.rarity,
+        cost:   card.cost,
+        atk:    card.atk ?? 0,
+        def:    card.def ?? 0,
+      }));
   },
 
   // ── Bar ─────────────────────────────────────────────────────

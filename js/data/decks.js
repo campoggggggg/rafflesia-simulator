@@ -29,7 +29,7 @@ export async function loadDecksFromSupabase() {
   }));
 }
 
-export async function saveDeckToSupabase(deck) {
+export async function saveDeckToSupabase(deck) {  // exported for use by deckbuilder onNew()
   const user = await getUser();
   if (!user) return;
 

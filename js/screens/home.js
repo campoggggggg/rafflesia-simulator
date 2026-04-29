@@ -183,7 +183,7 @@ export function renderHomeScreen() {
               <h3 class="rule-title">Inizio Partita</h3>
               <p>Entrambi i giocatori partono con <strong>25 punti vita</strong> e pescano <strong>5 carte</strong> dalla mano iniziale. È possibile <i>riciclare</i> un qualsiasi
               numero di carte dalla mano e pescare lo stesso numero di carte dal Main deck </p>
-              <p>Dopo il mulligan, il Commander entra in gioco nella propria zona dedicata. I Territori vengono messi in un mazzo separato, e se ne gioca uno per turno, riciclando una carta <i>non-leggendaria<i> dalla mano.</p>
+              <p>Dopo il mulligan, il Commander entra in gioco nella propria zona dedicata. I Territori vengono messi in un mazzo separato, e se ne gioca uno per turno, riciclando una carta <i>non-leggendaria</i> dalla mano.</p>
             </div>
           </div>
 
@@ -209,10 +209,9 @@ export function renderHomeScreen() {
           <div class="rule-panel rule-even">
             <div class="rule-img-wrap">
               <img src="assets/rules-bg4.jpg" class="rule-bg-img" alt="">
-              <span class="rule-img-quote">quote 1 lorem ipsum</span>
+              <span class="rule-img-quote">“Per vincere qualsiasi battaglia, devi combattere come se fossi già morto.”</span>
             </div>
             <div class="rule-content">
-              <div class="rule-icon">🗺</div>
               <h3 class="rule-title">Zone di Gioco</h3>
               <ul class="rule-list">
                 <li><strong>Field</strong> — dove vivono i Minion in gioco. Slot limitati.</li>
@@ -227,7 +226,6 @@ export function renderHomeScreen() {
           <!-- 5 — Costo & Mana | testo sx, immagine dx -->
           <div class="rule-panel rule-odd">
             <div class="rule-content">
-              <div class="rule-icon">💎</div>
               <h3 class="rule-title">Costo & Mana</h3>
               <p>Ogni carta ha due costi visibili in basso a sinistra:</p>
               <ul class="rule-list">
@@ -238,7 +236,7 @@ export function renderHomeScreen() {
             </div>
             <div class="rule-img-wrap">
               <img src="assets/rules-bg5.jpg" class="rule-bg-img" alt="">
-              <span class="rule-img-quote">quote 1 lorem ipsum</span>
+              <span class="rule-img-quote">"Il sangue non mente mai."</span>
             </div>
           </div>
 
@@ -246,10 +244,9 @@ export function renderHomeScreen() {
           <div class="rule-panel rule-even">
             <div class="rule-img-wrap">
               <img src="assets/rules-bg6.jpg" class="rule-bg-img" alt="">
-              <span class="rule-img-quote">quote 1 lorem ipsum</span>
+              <span class="rule-img-quote">"Sorgo dal fuoco, danzando nell'aria."</span>
             </div>
             <div class="rule-content">
-              <div class="rule-icon">✦</div>
               <h3 class="rule-title">Keyword Principali</h3>
               <ul class="rule-list">
                 <li><strong>Sudden</strong> — può essere usata dalla Sudden Zone, in risposta a eventi avversari.</li>
@@ -261,15 +258,6 @@ export function renderHomeScreen() {
             </div>
           </div>
 
-        </div>
-
-        <!-- Condizione di vittoria -->
-        <div class="win-condition">
-          <div class="win-icon">💀</div>
-          <div class="win-text">
-            <h3>Condizione di Vittoria</h3>
-            <p>Riduci i punti vita dell'avversario a <strong>0</strong>. Le creature colpiscono direttamente il giocatore se non ci sono Minion avversari che bloccano.</p>
-          </div>
         </div>
 
       </section>

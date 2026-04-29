@@ -7,8 +7,10 @@
 
 export const AppState = {
 
+  // Populated from Supabase auth on login, cleared on logout.
+  username: "",
+
   settings: {
-    playerName:    "Duelist",
     musicVolume:   50,
     sfxVolume:     50,
     theme:         "dark",
