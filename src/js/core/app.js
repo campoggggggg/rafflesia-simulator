@@ -106,6 +106,7 @@ async function initApp() {
       await ensureProfile(user);
       await onLoginLoadDecks();
       await renderDeckBuilderScreen();
+      renderPlayScreen();
       updateGlobalUI(user);
       if (event === "SIGNED_IN" && _initialAuthHandled) {
         showGlobalToast(`Welcome back to Rafflesia, ${AppState.username}.`, "success");

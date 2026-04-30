@@ -7,8 +7,8 @@
 //   4. Transition into the game board once both ready
 // ============================================================
 
-import { getCurrentDeck }          from '../../core/state.js';
-import { updateBackButtons }       from '../../core/router.js';
+import { getCurrentDeck, AppState } from '../../core/state.js';
+import { updateBackButtons }        from '../../core/router.js';
 import { GameState, setupPlayer }  from './game-state.js';
 import { renderBoard }             from './board-render.js';
 import {
@@ -25,10 +25,21 @@ export function renderPlayScreen() {
   const currentDeck = getCurrentDeck();
   const issues      = validateDeck(currentDeck);
 
+  const deckOptions = AppState.decks.map(d =>
+    `<option value="${d.id}" ${String(d.id) === String(AppState.currentDeckId) ? "selected" : ""}>${_esc(d.name)}</option>`
+  ).join("");
+
   screen.innerHTML = `
     <div class="play-lobby">
       <h2 class="page-title">Play — Multiplayer</h2>
       <p class="page-subtitle">Create or join a room with a shared key.</p>
+
+      <div class="play-deck-select-row">
+        <label for="playDeckSelect">Deck:</label>
+        <select id="playDeckSelect" class="play-deck-select">
+          ${deckOptions}
+        </select>
+      </div>
 
       ${issues.length ? `
         <div class="play-deck-warning">
@@ -83,6 +94,12 @@ export function renderPlayScreen() {
   `;
 
   updateBackButtons();
+
+  document.getElementById("playDeckSelect")?.addEventListener("change", e => {
+    AppState.currentDeckId = e.target.value;
+    renderPlayScreen();
+  });
+
   _attachLobbyEvents(currentDeck);
 }
 
@@ -170,6 +187,10 @@ function _prepareAndSendDeck(deck, myRole) {
 function _setStatus(id, msg) {
   const el = document.getElementById(id);
   if (el) el.textContent = msg;
+}
+
+function _esc(str) {
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function validateDeck(deck) {
