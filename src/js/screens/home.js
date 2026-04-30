@@ -12,7 +12,7 @@ export function renderHomeScreen() {
 
       <!-- ══════════════════ HERO ══════════════════ -->
       <section class="home-section hero-section">
-        <img src="assets/rafflesia-logo.png" alt="Rafflesia Logo" class="hero-logo">
+        <img src="src/assets/rafflesia-logo.png" alt="Rafflesia Logo" class="hero-logo">
         <h1 class="hero-title">RAFFLESIA</h1>
       </section>
 
@@ -142,7 +142,7 @@ export function renderHomeScreen() {
           </div>
 
           <div class="about-img-wrap">
-            <img src="assets/about-bg.jpg" class="about-bg-img" alt="">
+            <img src="src/assets/about-bg.jpg" class="about-bg-img" alt="">
             <span class="about-img-quote">"Non era un'alba. Era una sentenza."</span>
           </div>
         </div>
@@ -168,7 +168,7 @@ export function renderHomeScreen() {
               </ul>
             </div>
             <div class="rule-img-wrap">
-              <img src="assets/rules-bg1.jpg" class="rule-bg-img" alt="">
+              <img src="src/assets/rules-bg1.jpg" class="rule-bg-img" alt="">
               <span class="rule-img-quote">"Non chiedo ai morti di tornare. Chiedo alla terra di restituire ciò che ha preso."</span>
             </div>
           </div>
@@ -176,7 +176,7 @@ export function renderHomeScreen() {
           <!-- 2 — Inizio partita | immagine sx, testo dx -->
           <div class="rule-panel rule-even">
             <div class="rule-img-wrap">
-              <img src="assets/rules-bg2.jpg" class="rule-bg-img" alt="">
+              <img src="src/assets/rules-bg2.jpg" class="rule-bg-img" alt="">
               <span class="rule-img-quote">"KA-KAAWW!!"</span>
             </div>
             <div class="rule-content">
@@ -200,7 +200,7 @@ export function renderHomeScreen() {
               </ol>
             </div>
             <div class="rule-img-wrap">
-              <img src="assets/rules-bg3.jpg" class="rule-bg-img" alt="">
+              <img src="src/assets/rules-bg3.jpg" class="rule-bg-img" alt="">
               <span class="rule-img-quote">"Il ciclo non perdona, ma almeno ricomincia."</span>
             </div>
           </div>
@@ -208,7 +208,7 @@ export function renderHomeScreen() {
           <!-- 4 — Zone di gioco | immagine sx, testo dx -->
           <div class="rule-panel rule-even">
             <div class="rule-img-wrap">
-              <img src="assets/rules-bg4.jpg" class="rule-bg-img" alt="">
+              <img src="src/assets/rules-bg4.jpg" class="rule-bg-img" alt="">
               <span class="rule-img-quote">“Per vincere qualsiasi battaglia, devi combattere come se fossi già morto.”</span>
             </div>
             <div class="rule-content">
@@ -235,7 +235,7 @@ export function renderHomeScreen() {
               <p>I Territory si <em>tappano</em> (si girano) per produrre mana e si rizzano all'inizio del tuo turno.</p>
             </div>
             <div class="rule-img-wrap">
-              <img src="assets/rules-bg5.jpg" class="rule-bg-img" alt="">
+              <img src="src/assets/rules-bg5.jpg" class="rule-bg-img" alt="">
               <span class="rule-img-quote">"Il sangue non mente mai."</span>
             </div>
           </div>
@@ -243,7 +243,7 @@ export function renderHomeScreen() {
           <!-- 6 — Keyword | immagine sx, testo dx -->
           <div class="rule-panel rule-even">
             <div class="rule-img-wrap">
-              <img src="assets/rules-bg6.jpg" class="rule-bg-img" alt="">
+              <img src="src/assets/rules-bg6.jpg" class="rule-bg-img" alt="">
               <span class="rule-img-quote">"Sorgo dal fuoco, danzando nell'aria."</span>
             </div>
             <div class="rule-content">
@@ -335,7 +335,7 @@ export function renderHomeScreen() {
 /* ═══ ROADMAP ════════════════════════════════════════════════ */
 .roadmap-section {
   position: relative;
-  background-image: url('../assets/roadmap-bg.jpg');
+  background-image: url('src/assets/roadmap-bg.jpg');
   background-size: cover;
   background-position: center top;
   border-radius: 12px;

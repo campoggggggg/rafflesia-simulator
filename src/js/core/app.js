@@ -5,9 +5,9 @@
 // caricato da index.html come <script type="module">.
 // ============================================================
 
-import { navigateTo, setNavigationHistory, getCurrentScreen } from './router.js';
+import { navigateTo, setNavigationHistory } from './router.js';
 import { showGlobalToast, updateGlobalUI } from './ui.js';
-import { getUser, signOut, onAuthChange, ensureProfile } from '../auth/auth.js';
+import { signOut, onAuthChange, ensureProfile } from '../auth/auth.js';
 import { onLoginLoadDecks } from '../data/decks.js';
 import { syncCardsFromSupabase } from '../data/cards.js';
 import { AppState } from './state.js';
@@ -23,17 +23,11 @@ import { renderPublicDeckScreen }     from '../screens/publicdeck.js';
 
 async function goToAuthScreen() {
   setNavigationHistory(["auth"]);
+  renderAuthScreen();
   navigateTo("auth", false);
 }
 
-async function goToDeckBuilder() {
-  const user = await getUser();
-  if (!user) {
-    showGlobalToast("You need to sign-up before creating a deck", "error");
-    await goToAuthScreen();
-    return;
-  }
-
+function goToDeckBuilder() {
   navigateTo("deckbuilder");
 }
 
@@ -41,7 +35,7 @@ function initNavigation() {
   document.querySelectorAll('.nav-btn[data-screen]').forEach(btn => {
     btn.addEventListener("click", async () => {
       if (btn.dataset.screen === "deckbuilder") {
-        await goToDeckBuilder();
+        goToDeckBuilder();
         return;
       }
 
@@ -61,13 +55,8 @@ function initNavigation() {
       event.preventDefault();
       event.stopPropagation();
 
-      const user = await getUser();
-      if (user) {
-        authBtn.textContent = "Accedi";
+      if (AppState.username) {
         try { await signOut(); } catch (e) { console.warn("Logout:", e.message); }
-        AppState.username = "";
-        updateGlobalUI(null);
-        await goToAuthScreen();
       } else {
         await goToAuthScreen();
       }
@@ -98,7 +87,7 @@ async function initApp() {
 
   try { renderHomeScreen(); } catch (e) { console.error("renderHomeScreen:", e); }
   try { renderPlayScreen(); } catch (e) { console.error("renderPlayScreen:", e); }
-  try { await renderDeckBuilderScreen(); } catch (e) { console.error("renderDeckBuilderScreen:", e); }
+  try { renderDeckBuilderScreen(); } catch (e) { console.error("renderDeckBuilderScreen:", e); }
   try { renderSettingsScreen(); } catch (e) { console.error("renderSettingsScreen:", e); }
   try { renderAuthScreen(); } catch (e) { console.error("renderAuthScreen:", e); }
   try { renderAdvancedSearchScreen(); } catch (e) { console.error("renderAdvancedSearchScreen:", e); }
@@ -109,8 +98,6 @@ async function initApp() {
   setNavigationHistory(["home"]);
   navigateTo("home", false);
 
-  // True dopo il primo evento auth (INITIAL_SESSION o SIGNED_OUT senza utente).
-  // Serve per distinguere un login esplicito dal semplice ripristino della sessione.
   let _initialAuthHandled = false;
 
   onAuthChange(async (event, user) => {
@@ -128,10 +115,6 @@ async function initApp() {
     } else if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !user)) {
       _initialAuthHandled = true;
       AppState.username = "";
-      if (getCurrentScreen() === "deckbuilder") {
-        await goToAuthScreen();
-      }
-      await renderDeckBuilderScreen();
       updateGlobalUI(null);
     }
   });
@@ -139,8 +122,6 @@ async function initApp() {
   initSporeCanvas();
 
   await syncCardsFromSupabase();
-
-  await renderDeckBuilderScreen();
 }
 
 initApp();

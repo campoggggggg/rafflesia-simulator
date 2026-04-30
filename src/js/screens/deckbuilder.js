@@ -72,25 +72,7 @@ let _mmAttached  = false;
 // ─────────────────────────────────────────────────────────────
 export async function renderDeckBuilderScreen() {
   const screen = document.getElementById('screen-deckbuilder');
-  const user   = await getUser();
   if (!screen) return;
-
-  if (!user) {
-    screen.innerHTML = `
-      <div class="card-panel" style="max-width: 560px; margin: 48px auto;">
-        <h2 class="page-title">Deck builder</h2>
-        <p class="page-subtitle">Accedi per creare, salvare e modificare i tuoi mazzi.</p>
-        <div class="row" style="margin-top: 20px;">
-          <button class="primary-btn" id="deckbuilderLoginBtn">Vai al login</button>
-        </div>
-      </div>
-    `;
-
-    document.getElementById('deckbuilderLoginBtn')?.addEventListener('click', () => {
-      navigateTo('auth');
-    });
-    return;
-  }
 
   const deck   = getCurrentDeck();
   ensure(deck);
@@ -114,8 +96,27 @@ function buildSkeleton(deck) {
   <div class="db-topbar">
     <div class="db-tb-brand">
       <span class="db-brand-name">DECK BUILDER</span>
-      <img class="db-brand-logo" src="assets/rafflesia-logo.png" alt="">
-      <span class="db-main-counter" id="db-main-counter">MAIN 0/29</span>
+      <img class="db-brand-logo" src="src/assets/rafflesia-logo.png" alt="">
+      <div class="db-diamond-counter" id="db-diamond-counter" title="">
+        <svg class="db-diamond-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <!-- quadranti: top=commander, right=main, bottom=territory, left=side -->
+          <polygon class="db-dq db-dq-top"    points="50,2 98,50 50,50"  id="db-dq-cmd"/>
+          <polygon class="db-dq db-dq-right"  points="98,50 50,98 50,50" id="db-dq-main"/>
+          <polygon class="db-dq db-dq-bottom" points="50,98 2,50 50,50"  id="db-dq-terr"/>
+          <polygon class="db-dq db-dq-left"   points="2,50 50,2 50,50"   id="db-dq-side"/>
+          <!-- linee divisorie -->
+          <line x1="50" y1="2"  x2="50" y2="98" stroke="var(--db-diamond-border)" stroke-width="1.2"/>
+          <line x1="2"  y1="50" x2="98" y2="50" stroke="var(--db-diamond-border)" stroke-width="1.2"/>
+          <!-- bordo esterno -->
+          <polygon points="50,2 98,50 50,98 2,50" fill="none" stroke="var(--db-diamond-border)" stroke-width="1.5"/>
+        </svg>
+        <div class="db-diamond-labels">
+          <span class="db-dl-top"    id="db-dl-cmd">P</span>
+          <span class="db-dl-right"  id="db-dl-main">0/29</span>
+          <span class="db-dl-bottom" id="db-dl-terr">0/12</span>
+          <span class="db-dl-left"   id="db-dl-side">0/10</span>
+        </div>
+      </div>
     </div>
 
     <div class="db-tb-actions">
@@ -175,8 +176,6 @@ function buildSkeleton(deck) {
             <label class="db-fl">Subtype</label>
             <select class="db-fi" id="df-subtype">
               <option value="">Tutti</option>
-              ${[...new Set(CardDatabase.map(c => c.subtype).filter(Boolean))].sort()
-                .map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('')}
             </select>
           </div>
           <div class="db-fg">
@@ -429,12 +428,29 @@ function renderDeckPanel() {
   const deck = getCurrentDeck();
   ensure(deck);
 
-  const counterEl = document.getElementById('db-main-counter');
-  if (counterEl) {
-    const n = deck.cards.length;
-    counterEl.textContent = `MAIN ${n}/${MAX_MAIN}`;
-    counterEl.classList.toggle('db-main-counter--full', n >= MAX_MAIN);
-  }
+  const mainN = deck.cards.length;
+  const terrN = deck.territoryCards.length;
+  const sideN = deck.sideboardCards.length;
+  const hasCmd = !!deck.commanderId;
+
+  const dlCmd  = document.getElementById('db-dl-cmd');
+  const dlMain = document.getElementById('db-dl-main');
+  const dlTerr = document.getElementById('db-dl-terr');
+  const dlSide = document.getElementById('db-dl-side');
+  const dqCmd  = document.getElementById('db-dq-cmd');
+  const dqMain = document.getElementById('db-dq-main');
+  const dqTerr = document.getElementById('db-dq-terr');
+  const dqSide = document.getElementById('db-dq-side');
+  const diamond = document.getElementById('db-diamond-counter');
+
+  if (dlMain)  dlMain.textContent  = `${mainN}/${MAX_MAIN}`;
+  if (dlTerr)  dlTerr.textContent  = `${terrN}/${MAX_TERRITORY}`;
+  if (dlSide)  dlSide.textContent  = `${sideN}/${MAX_SIDE}`;
+  if (dqCmd)   dqCmd.classList.toggle('db-dq-active', hasCmd);
+  if (dqMain)  dqMain.classList.toggle('db-dq-full', mainN >= MAX_MAIN);
+  if (dqTerr)  dqTerr.classList.toggle('db-dq-full', terrN >= MAX_TERRITORY);
+  if (dqSide)  dqSide.classList.toggle('db-dq-full', sideN >= MAX_SIDE);
+  if (diamond) diamond.title = `Commander: ${hasCmd ? 'sì' : 'no'} · Main: ${mainN}/${MAX_MAIN} · Territory: ${terrN}/${MAX_TERRITORY} · Side: ${sideN}/${MAX_SIDE}`;
 
   // Raggruppa carte main per tipo
   const groups = { Quest: {}, Spell: {}, Minion: {} };
@@ -744,6 +760,17 @@ function populateDropdown() {
       renderDeckBuilderScreen();
     })
   );
+
+  populateSubtypeDropdown();
+}
+
+export function populateSubtypeDropdown() {
+  const subtypeSel = document.getElementById('df-subtype');
+  if (!subtypeSel || !CardDatabase.length) return;
+  const subtypes = [...new Set(CardDatabase.map(c => c.subtype).filter(Boolean))].sort();
+  subtypeSel.innerHTML = `<option value="">Tutti</option>` +
+    subtypes.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  subtypeSel.value = filters.subtype;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -766,13 +793,12 @@ function onNew() {
 
 function onDelete() {
   const deck = getCurrentDeck();
-  openDialog(`Eliminare il mazzo "${esc(deck.name)}"?`, null, () => {
+  openDialog(`Eliminare il mazzo "${esc(deck.name)}"?`, null, async () => {
     if (AppState.decks.length <= 1) { showToast('Devi avere almeno un mazzo.'); return; }
-    const deleted = AppState.decks.find(d => d.id === AppState.currentDeckId);
-    AppState.decks         = AppState.decks.filter(d => d.id !== AppState.currentDeckId);
+    const deleted = AppState.decks.find(d => String(d.id) === String(AppState.currentDeckId));
+    AppState.decks         = AppState.decks.filter(d => String(d.id) !== String(AppState.currentDeckId));
     AppState.currentDeckId = AppState.decks[0].id;
-    saveDecks();
-    if (deleted) deleteDeckFromSupabase(deleted).catch(() => {});
+    if (deleted) await deleteDeckFromSupabase(deleted).catch(() => {});
     renderDeckBuilderScreen();
   });
 }

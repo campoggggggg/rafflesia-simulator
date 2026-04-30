@@ -8,6 +8,7 @@
 
 import { FilterManager } from './filter-manager.js';
 import { CardDatabase }  from '../../data/cards.js';
+import { db }            from '../../core/supabase-client.js';
 
 Chart.register(ChartDataLabels);
 

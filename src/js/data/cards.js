@@ -32,7 +32,7 @@ export function buildCardObject(row) {
     text:         row.card_text ?? "",
     keywords,
     setNum:       row.set_num ?? "",
-    image:        `assets/cards/${String(row.id).padStart(3, '0')}.png`
+    image:        `src/assets/cards/${String(row.id).padStart(3, '0')}.png`
   };
 }
 

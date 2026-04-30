@@ -23,7 +23,7 @@ export function renderAuthScreen() {
 
       <div class="auth-left-panel">
         <div class="auth-logo-row">
-          <img src="assets/rafflesia-logo.png" alt="Rafflesia TCG" class="auth-logo-img">
+          <img src="src/assets/rafflesia-logo.png" alt="Rafflesia TCG" class="auth-logo-img">
         </div>
 
         <!-- LOGIN -->
@@ -112,7 +112,7 @@ export function renderAuthScreen() {
       </div>
 
       <div class="auth-right-panel">
-        <img class="auth-bg-img" src="assets/login.jpg" alt="" />
+        <img class="auth-bg-img" src="src/assets/login.jpg" alt="" />
         <div class="auth-glass-overlay"></div>
       </div>
 

@@ -9,8 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="css/main.css" />
-  <link rel="stylesheet" href="css/advancedsearch.css" />
+  <link rel="stylesheet" href="src/css/main.css" />
 </head>
 <body>
 
@@ -34,7 +33,7 @@
         </button>
       </div>
       <div class="logo">
-        <img src="assets/rafflesia-logo.png" alt="Rafflesia Logo" class="logo-img">
+        <img src="src/assets/rafflesia-logo.png" alt="Rafflesia Logo" class="logo-img">
         <span class="db-brand-name">"Even the most beautiful bloom feeds on rot." <br>— Sadu, False Prophet</span>
       </div>
 
@@ -50,13 +49,13 @@
     </aside>
 
     <main id="main-content">
-      <section id="screen-home"        class="screen active"></section>
-      <section id="screen-play"        class="screen"></section>
-      <section id="screen-deckbuilder" class="screen"></section>
-      <section id="screen-settings"    class="screen"></section>
-      <section id="screen-auth"        class="screen"></section>
+      <section id="screen-home"           class="screen active"></section>
+      <section id="screen-play"           class="screen"></section>
+      <section id="screen-deckbuilder"    class="screen"></section>
+      <section id="screen-settings"       class="screen"></section>
+      <section id="screen-auth"           class="screen"></section>
       <section id="screen-advancedsearch" class="screen"></section>
-      <section id="screen-publicdeck"    class="screen"></section>
+      <section id="screen-publicdeck"     class="screen"></section>
     </main>
   </div>
 
@@ -68,6 +67,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
   <!-- Entry point: importa tutto il resto via ES modules -->
-  <script type="module" src="js/core/app.js"></script>
+  <script type="module" src="src/js/core/app.js"></script>
 </body>
 </html>

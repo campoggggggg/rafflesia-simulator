@@ -1,0 +1,87 @@
+/* ══════════════════════════════════════════════════════════════
+   Rafflesia — Dark Fantasy Minimal
+   Palette: Forest Night · Burgundy · Slate Violet
+   Fonts: Cinzel (titoli) · Inter (corpo)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Palette ──────────────────────────────────────────────── */
+:root {
+  /* Nuova palette */
+  --bg-base:            #111412;
+  --bg-surface:         #1A1F1C;
+  --bg-elevated:        #222823;
+  --accent-forest:      #2F3A34;
+  --accent-burgundy:    #6E5859;
+  --accent-violet:      #9B8FA0;
+  --text-heading:       #D4CEC9;
+
+  /* Retrocompatibilità con classi esistenti */
+  --bg-deep:            #111412;
+  --bg-main:            #111412;
+  --bg-panel:           #1A1F1C;
+  --bg-card:            #222823;
+
+  --text-primary:       #B8ACA5;
+  --text-secondary:     #7A6F6B;
+  --text-faint:         rgba(184, 172, 165, 0.10);
+
+  --parchment:          var(--text-primary);
+  --parchment-dim:      var(--text-secondary);
+  --parchment-faint:    var(--text-faint);
+
+  --violet:             #9B8FA0;
+  --violet-dim:         #7A6F7B;
+  --violet-bright:      #C5BBD0;
+  --violet-glow:        rgba(155, 143, 160, 0.20);
+  --violet-subtle:      rgba(155, 143, 160, 0.08);
+
+  --gold:               #6E5859;
+  --gold-dim:           #5C4344;
+  --gold-bright:        #9C7F80;
+  --gold-glow:          rgba(110, 88, 89, 0.20);
+
+  --blood:              #3a1a1a;
+  --blood-mid:          #6E5859;
+  --blood-bright:       #C87070;
+
+  --border:             rgba(47, 58, 52, 0.55);
+  --border-gold:        rgba(110, 88, 89, 0.40);
+
+  --error:              #C87070;
+  --success:            #5F8B6F;
+  --shadow:             rgba(0, 0, 0, 0.75);
+}
+
+/* ── Tema Light ───────────────────────────────────────────── */
+body.theme-light {
+  --bg-base:            #F4F1EE;
+  --bg-surface:         #ECEAE6;
+  --bg-elevated:        #E2DED9;
+  --accent-violet:      #534AB7;
+  --text-heading:       #1A1714;
+
+  --bg-deep:            #F4F1EE;
+  --bg-main:            #F4F1EE;
+  --bg-panel:           #ECEAE6;
+  --bg-card:            #E2DED9;
+
+  --text-primary:       #2C2825;
+  --text-secondary:     #7A6F6B;
+  --text-faint:         rgba(44, 40, 37, 0.08);
+
+  --parchment:          var(--text-primary);
+  --parchment-dim:      var(--text-secondary);
+  --parchment-faint:    var(--text-faint);
+
+  --violet:             #534AB7;
+  --violet-dim:         #3B338A;
+  --violet-bright:      #7069D0;
+  --violet-glow:        rgba(83, 74, 183, 0.18);
+  --violet-subtle:      rgba(83, 74, 183, 0.07);
+
+  --border:             rgba(0, 0, 0, 0.10);
+  --border-gold:        rgba(110, 88, 89, 0.30);
+
+  --error:              #B55252;
+  --success:            #3F7050;
+}

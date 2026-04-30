@@ -1,0 +1,81 @@
+/* ── Pulsanti ─────────────────────────────────────────────── */
+.primary-btn,
+.secondary-btn,
+.danger-btn {
+  border-radius: 4px;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.primary-btn {
+  background: var(--accent-forest);
+  color: var(--text-primary);
+  border: 0.5px solid var(--accent-burgundy);
+}
+
+.primary-btn:hover { background: #3a4840; }
+
+.primary-btn:disabled {
+  opacity: 0.40;
+  cursor: not-allowed;
+}
+
+body.theme-light .primary-btn {
+  background: var(--accent-forest);
+  color: #F4F1EE;
+  border: none;
+}
+
+body.theme-light .primary-btn:hover { background: #3a4840; }
+
+.secondary-btn {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 0.5px solid var(--accent-forest);
+}
+
+.secondary-btn:hover {
+  border-color: var(--accent-burgundy);
+  color: var(--text-primary);
+}
+
+.secondary-btn:disabled { opacity: 0.40; cursor: not-allowed; }
+
+body.theme-light .secondary-btn { border-color: rgba(47,58,52,0.50); color: #2C2825; }
+body.theme-light .secondary-btn:hover { background: rgba(47,58,52,0.08); }
+
+.danger-btn {
+  background: transparent;
+  color: var(--accent-burgundy);
+  border: 0.5px solid var(--accent-burgundy);
+}
+
+.danger-btn:hover { background: rgba(110, 88, 89, 0.15); }
+
+/* Nasconde i pulsanti "← Indietro" */
+.back-btn { display: none !important; }
+
+/* ── Pulsante Home (quadrato arrotondato) ─────────────────── */
+.home-btn-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  background: transparent;
+  border: 0.5px solid var(--accent-forest);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.home-btn-circle:hover {
+  border-color: var(--accent-burgundy);
+  color: var(--text-primary);
+}

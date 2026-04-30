@@ -66,14 +66,15 @@ export async function saveDeckToSupabase(deck) {  // exported for use by deckbui
 }
 
 export async function deleteDeckFromSupabase(deck) {
-  if (!deck.supabase_id) return;
+  const dbId = deck.supabase_id || deck.id;
+  if (!dbId) return;
   const user = await getUser();
   if (!user) return;
 
   const { error } = await db
     .from("decks")
     .delete()
-    .eq("id",      deck.supabase_id)
+    .eq("id",      dbId)
     .eq("user_id", user.id);
 
   if (error) console.warn("Errore eliminazione mazzo:", error.message);

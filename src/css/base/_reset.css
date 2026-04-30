@@ -1,0 +1,95 @@
+/* ── Reset & Base ─────────────────────────────────────────── */
+* { box-sizing: border-box; }
+.hidden { display: none !important; }
+
+select {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+select option {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+body.theme-light select        { background-color: #ECEAE6; color: #2C2825; }
+body.theme-light select option { background-color: #ECEAE6; color: #2C2825; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 28px,
+    rgba(184, 172, 165, 0.04) 28px,
+    rgba(184, 172, 165, 0.04) 29px
+  );
+}
+
+body.theme-light::before {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 28px,
+    rgba(47, 58, 52, 0.06) 28px,
+    rgba(47, 58, 52, 0.06) 29px
+  );
+}
+
+button, input, select, textarea { font: inherit; }
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(47, 58, 52, 0.60);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(110, 88, 89, 0.55); }
+
+/* ── Animazioni ───────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Tipografia ───────────────────────────────────────────── */
+.page-title {
+  margin-top: 0;
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--text-heading);
+  letter-spacing: 0.05em;
+}
+
+.section-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+
+.page-subtitle {
+  color: var(--text-secondary);
+  margin-top: 2px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.muted { color: var(--text-secondary); }

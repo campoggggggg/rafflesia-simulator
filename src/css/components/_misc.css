@@ -1,0 +1,326 @@
+/* ── Card Panel ───────────────────────────────────────────── */
+.card-panel {
+  background: var(--bg-surface);
+  border: 0.5px solid var(--accent-forest);
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+body.theme-light .card-panel {
+  background: var(--bg-surface);
+  border-color: rgba(47, 58, 52, 0.35);
+}
+
+/* ── Badge ────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  border: 0.5px solid var(--accent-forest);
+  letter-spacing: 0.03em;
+}
+
+.badge-legendary {
+  border-color: var(--accent-violet);
+  color: var(--accent-violet);
+}
+
+/* ── Game Card (carta fisica) ─────────────────────────────── */
+.game-card {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 0.5px solid var(--accent-forest);
+  border-radius: 4px;
+  padding: 12px;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.game-card h4 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-family: 'Cinzel', serif;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--text-heading);
+}
+
+.game-card p  { margin: 0 0 8px; font-size: 13px; }
+
+.card-stats {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+/* ── Deck Item ────────────────────────────────────────────── */
+.deck-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+/* ── Deck Builder (legacy layout) ─────────────────────────── */
+.deckbuilder-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr 0.9fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.collection-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.collection-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-surface);
+  padding-bottom: 10px;
+}
+
+.collection-scroll {
+  max-height: 72vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+  margin-top: 10px;
+}
+
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+  gap: 10px;
+}
+
+.image-card {
+  background: transparent;
+  border: none;
+  padding: 0;
+  min-height: auto;
+  display: block;
+}
+
+.card-image-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.card-image {
+  width: 100%;
+  max-width: 95px;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: block;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s;
+}
+
+.card-image:hover {
+  transform: scale(1.04);
+  border-color: var(--accent-burgundy);
+}
+
+.collection-card-image { cursor: pointer; }
+
+.collection-card-image.selected {
+  outline: 2px solid var(--accent-violet);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.card-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.card-preview-box {
+  background: rgba(20, 20, 34, 0.62);
+  backdrop-filter: blur(12px) saturate(130%);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+body.theme-light .card-preview-box {
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.card-preview-image {
+  width: 100%;
+  max-width: 280px;
+  border-radius: 10px;
+  border: 1px solid var(--border-gold);
+  display: block;
+  margin: 0 auto 16px;
+  box-shadow: 0 4px 22px rgba(0,0,0,0.60), 0 0 10px rgba(139,92,246,0.10);
+}
+
+.card-preview-placeholder {
+  color: var(--text-secondary);
+}
+
+.card-preview-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.deck-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 48vh;
+  overflow-y: auto;
+}
+
+.deck-card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  position: relative;
+  background-image:
+    linear-gradient(90deg, rgba(0,0,0,0.8) 30%, rgba(0,0,0,0) 100%),
+    var(--card-url);
+}
+
+.deck-card-row:last-child { border-bottom: none; }
+
+.deck-card-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.deck-card-name span {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Play Menu ────────────────────────────────────────────── */
+.play-menu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.play-mode-box {
+  background: var(--bg-surface);
+  border: 0.5px solid var(--accent-forest);
+  border-radius: 4px;
+  padding: 16px;
+}
+
+body.theme-light .play-mode-box { background: var(--bg-surface); }
+
+.play-mode-box h3 {
+  margin-top: 0;
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--text-heading);
+}
+
+.status-box {
+  background: var(--bg-elevated);
+  border: 0.5px dashed var(--accent-forest);
+  border-radius: 4px;
+  padding: 14px;
+  margin-top: 12px;
+}
+
+/* ── Big Action Buttons (Home screen) ────────────────────── */
+.big-action {
+  width: 100%;
+  min-height: 120px;
+  border-radius: 4px;
+  border: 0.5px solid var(--accent-forest);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  padding: 20px;
+  transition: border-color 0.15s, background 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+body.theme-light .big-action { background: var(--bg-surface); }
+
+.big-action::after { display: none; }
+
+.big-action:hover {
+  border-color: var(--accent-burgundy);
+  background: var(--bg-elevated);
+}
+
+.big-action h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--text-heading);
+}
+
+/* ── Toast (globale) ─────────────────────────────────────── */
+.db-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--bg-surface);
+  border: 0.5px solid var(--accent-forest);
+  color: var(--text-primary);
+  padding: 8px 18px;
+  border-radius: 4px;
+  font-size: 13px;
+  z-index: 600;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.db-toast.toast-error {
+  border-color: var(--accent-burgundy);
+  color: var(--error);
+}
+.db-toast.toast-success {
+  border-color: var(--success);
+  color: var(--success);
+}
+.db-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Responsive misc ─────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .deckbuilder-layout   { grid-template-columns: 1fr; }
+  .card-preview-image   { max-width: 220px; }
+}

@@ -1,0 +1,22 @@
+/* ══════════════════════════════════════════════════════════════
+   main.css — Entry point degli stili.
+   Importa i partial nell'ordine corretto:
+   1. Base (variabili, reset, tipografia)
+   2. Layout (shell, sidebar, grid)
+   3. Components (per singolo componente)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Base ─────────────────────────────────────────────────── */
+@import './base/_variables.css';
+@import './base/_reset.css';
+
+/* ── Layout ───────────────────────────────────────────────── */
+@import './layout/_shell.css';
+
+/* ── Components ───────────────────────────────────────────── */
+@import './components/_buttons.css';
+@import './components/_forms.css';
+@import './components/_misc.css';
+@import './components/_deckbuilder.css';
+@import './components/_play.css';
+@import './components/_advancedsearch.css';

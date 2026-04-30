@@ -31,7 +31,7 @@ export const AppState = {
 };
 
 export function getCurrentDeck() {
-  return AppState.decks.find(d => d.id === AppState.currentDeckId)
+  return AppState.decks.find(d => String(d.id) === String(AppState.currentDeckId))
     || AppState.decks[0]
     || null;
 }
