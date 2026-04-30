@@ -793,6 +793,14 @@ async function onPublish() {
   const user = await getUser();
   if (!user) { showToast('Devi essere loggato per pubblicare.'); return; }
 
+  ensure(deck);
+  const totalCards = (deck.commanderId ? 1 : 0) + deck.cards.length + deck.territoryCards.length;
+  const isComplete = deck.commanderId && deck.cards.length === MAX_MAIN && deck.territoryCards.length === MAX_TERRITORY;
+  if (!isComplete) {
+    showToast(`Mazzo incompleto. Servono commander + ${MAX_MAIN} main + ${MAX_TERRITORY} territory (${totalCards}/42).`);
+    return;
+  }
+
   const commander = deck.commanderId
     ? CardDatabase.find(c => String(c.id) === String(deck.commanderId))
     : null;
@@ -836,7 +844,7 @@ function openPublishDialog(deckName, onOk) {
   dialog.innerHTML = `
     <p class="db-dlg-msg">Pubblica <strong>${esc(deckName)}</strong> nei mazzi pubblici?</p>
     <div class="db-pub-tag-section">
-      <label class="db-fl" style="margin-bottom:6px;display:block;">Tags (max 5, premi Invio o virgola per aggiungere)</label>
+      <label class="db-fl" style="margin-bottom:6px;display:block;">Tags (max 3 | press Enter to confirm)</label>
       <div class="db-pub-tag-pills" id="db-pub-pills"></div>
       <input class="db-fi db-pub-tag-inp" id="db-pub-tag-inp" type="text"
              placeholder="aggiungi tag…" autocomplete="off" style="margin-top:8px;width:100%;box-sizing:border-box;">
@@ -860,14 +868,14 @@ function openPublishDialog(deckName, onOk) {
     pillsEl.querySelectorAll('.db-pub-pill-rm').forEach(btn =>
       btn.addEventListener('click', () => { currentTags.splice(+btn.dataset.i, 1); renderPills(); })
     );
-    hint.textContent = currentTags.length >= 5 ? 'Limite di 5 tag raggiunto.' : '';
-    inp.disabled = currentTags.length >= 5;
+    hint.textContent = currentTags.length >= 3 ? 'Limite di 3 tag raggiunto.' : '';
+    inp.disabled = currentTags.length >= 3;
   }
 
   function addTag() {
     const raw = inp.value.replace(/[,\s]/g, '').trim().toLowerCase();
     if (!raw) return;
-    if (currentTags.length >= 5) return;
+    if (currentTags.length >= 3) return;
     if (currentTags.includes(raw)) { inp.value = ''; return; }
     currentTags.push(raw);
     inp.value = '';

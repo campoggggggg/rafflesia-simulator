@@ -101,67 +101,382 @@ function buildCard(d) {
   const commander = CardDatabase.find(c => String(c.id) === String(d.commander_id));
   const colorHex  = COLOR_HEX[d.commander_color] || COLOR_HEX.colorless;
   const imgSrc    = commander ? commander.image : '';
-  const dateStr   = d.created_at ? new Date(d.created_at).toLocaleDateString('it-IT') : '—';
+  const dateStr   = d.created_at ? timeAgo(new Date(d.created_at)) : '—';
   const tags      = (d.tags || []).filter(Boolean);
 
-  // Immagine: centrata su 1070×800, offset 67×67
-  const bgStyle = imgSrc
-    ? `background-image: url('${imgSrc}');
-       background-size: 1070px 800px;
-       background-position: -67px -67px;`
+  const blurStyle = imgSrc
+    ? `background-image: url('${imgSrc}'); background-size: 140%; background-position: center 5%;`
     : `background: ${colorHex};`;
 
   const tagsHtml = tags.length
     ? `<div class="pd-card-tags">
-         <span class="pd-tag-icon">🏷</span>
          ${tags.map(t => `<span class="pd-tag">${esc(t)}</span>`).join('')}
        </div>`
     : '';
 
   return `
     <div class="pd-card" data-deck-id="${esc(d.id)}">
-      <div class="pd-card-img" style="${bgStyle}">
+      <div class="pd-card-img">
+        <div class="pd-card-img-blur" style="${blurStyle}"></div>
         <div class="pd-card-img-overlay"></div>
-      </div>
-      <div class="pd-card-color-bar" style="background: ${colorHex};"></div>
-      <div class="pd-card-info">
-        <div class="pd-card-name">${esc(d.name)}</div>
-        <div class="pd-card-meta">${esc(d.author_username || 'Anonimo')}</div>
-        <div class="pd-card-meta pd-card-date">${dateStr}</div>
+        <div class="pd-card-color-bar" style="background: ${colorHex};"></div>
         ${tagsHtml}
+        <div class="pd-card-info">
+          <div class="pd-card-name">${esc(d.name)}</div>
+          <div class="pd-card-meta">${esc(d.author_username || 'Anonimo')} <span class="pd-card-dot">·</span> ${dateStr}</div>
+        </div>
       </div>
     </div>`;
 }
 
 // ─────────────────────────────────────────────────────────────
-// CLICK SU SCHEDA → crea mazzo e apre deckbuilder
+// CLICK SU SCHEDA → apre modal dettaglio mazzo
 // ─────────────────────────────────────────────────────────────
 async function onCardClick(deckId) {
   const publicDeck = _decks.find(d => String(d.id) === String(deckId));
   if (!publicDeck) return;
 
   const user = await getUser();
-  if (!user) {
-    showGlobalToast('Accedi per importare un mazzo nel tuo deck builder.', 'error');
-    navigateTo('auth');
-    return;
-  }
+  openDeckModal(publicDeck, user);
+}
 
-  const newDeck = {
-    name:           publicDeck.name,
-    commanderId:    publicDeck.commander_id || null,
-    cards:          publicDeck.cards          || [],
-    territoryCards: publicDeck.territory_cards || [],
-    sideboardCards: publicDeck.sideboard_cards || [],
+// ─────────────────────────────────────────────────────────────
+// MODAL DETTAGLIO MAZZO
+// ─────────────────────────────────────────────────────────────
+function openDeckModal(deck, user) {
+  const isOwner = user && String(user.id) === String(deck.author_user_id);
+
+  const commander = CardDatabase.find(c => String(c.id) === String(deck.commander_id));
+  const colorHex  = COLOR_HEX[deck.commander_color] || COLOR_HEX.colorless;
+
+  const buildSection = (label, ids) => {
+    if (!ids || !ids.length) return '';
+    const counts = {};
+    ids.forEach(id => { counts[id] = (counts[id] || 0) + 1; });
+    const rows = Object.entries(counts).map(([id, qty]) => {
+      const card = CardDatabase.find(c => String(c.id) === String(id));
+      const name = card ? esc(card.name) : `#${id}`;
+      const qtyStr = qty > 1 ? `<span class="pdm-qty">×${qty}</span>` : '';
+      const colorDot = card ? `<span class="pdm-dot" style="background:${COLOR_HEX[card.color] || COLOR_HEX.colorless}"></span>` : '';
+      return `<div class="pdm-row">${colorDot}<span class="pdm-name">${name}</span>${qtyStr}</div>`;
+    }).join('');
+    return `<div class="pdm-section"><div class="pdm-sec-label">${label}</div>${rows}</div>`;
   };
 
-  await saveDeckToSupabase(newDeck);
+  const cmdSection = commander
+    ? `<div class="pdm-section">
+         <div class="pdm-sec-label">COMMANDER</div>
+         <div class="pdm-row pdm-row-cmd">
+           <span class="pdm-dot" style="background:${colorHex}"></span>
+           <span class="pdm-name">${esc(commander.name)}</span>
+         </div>
+       </div>`
+    : '';
 
-  AppState.decks.push(newDeck);
-  AppState.currentDeckId = newDeck.id;
+  const tags = (deck.tags || []).filter(Boolean);
+  const tagsHtml = tags.length
+    ? `<div class="pdm-tags">${tags.map(t => `<span class="pdm-tag">${esc(t)}</span>`).join('')}</div>`
+    : '';
 
-  showGlobalToast(`"${publicDeck.name}" importato nel tuo deck builder.`, 'success');
-  navigateTo('deckbuilder');
+  const deleteBtn = isOwner
+    ? `<button class="pdm-btn pdm-btn-danger" id="pdm-delete">Rimuovi pubblicazione</button>`
+    : '';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'pdm-overlay';
+  overlay.id = 'pdm-overlay';
+  overlay.innerHTML = `
+    <div class="pdm-modal">
+      <div class="pdm-header" style="--pdm-color:${colorHex}">
+        <div class="pdm-header-bg" ${commander?.image ? `style="background-image:url('${commander.image}')"` : ''}></div>
+        <div class="pdm-header-overlay"></div>
+        <div class="pdm-header-content">
+          <div class="pdm-title">${esc(deck.name)}</div>
+          <div class="pdm-author">${esc(deck.author_username || 'Anonimo')} · ${deck.created_at ? timeAgo(new Date(deck.created_at)) : '—'}</div>
+          ${tagsHtml}
+        </div>
+        <button class="pdm-close" id="pdm-close">✕</button>
+      </div>
+      <div class="pdm-body">
+        <div class="pdm-list">
+          ${cmdSection}
+          ${buildSection('MAIN DECK', deck.cards)}
+          ${buildSection('TERRITORY', deck.territory_cards)}
+          ${buildSection('SIDEBOARD', deck.sideboard_cards)}
+        </div>
+        <div class="pdm-actions">
+          <button class="pdm-btn pdm-btn-primary" id="pdm-import">Importa nel deck builder</button>
+          <button class="pdm-btn" id="pdm-export-code">Export code</button>
+          <button class="pdm-btn" id="pdm-export-img">Export img</button>
+          ${deleteBtn}
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  document.getElementById('pdm-close').addEventListener('click', close);
+
+  document.getElementById('pdm-import').addEventListener('click', async () => {
+    const u = await getUser();
+    if (!u) {
+      showGlobalToast('Accedi per importare un mazzo.', 'error');
+      navigateTo('auth');
+      close();
+      return;
+    }
+    const newDeck = {
+      name:           deck.name,
+      commanderId:    deck.commander_id   || null,
+      cards:          deck.cards           || [],
+      territoryCards: deck.territory_cards || [],
+      sideboardCards: deck.sideboard_cards || [],
+    };
+    await saveDeckToSupabase(newDeck);
+    AppState.decks.push(newDeck);
+    AppState.currentDeckId = newDeck.id;
+    showGlobalToast(`"${deck.name}" importato nel tuo deck builder.`, 'success');
+    close();
+    navigateTo('deckbuilder');
+  });
+
+  document.getElementById('pdm-export-code').addEventListener('click', () => {
+    openExportCodeModal({
+      commanderId:    deck.commander_id   || null,
+      cards:          deck.cards           || [],
+      territoryCards: deck.territory_cards || [],
+      sideboardCards: deck.sideboard_cards || [],
+    }, deck.name);
+  });
+
+  document.getElementById('pdm-export-img').addEventListener('click', () => {
+    exportDeckImage({
+      name:           deck.name,
+      commanderId:    deck.commander_id   || null,
+      cards:          deck.cards           || [],
+      territoryCards: deck.territory_cards || [],
+      sideboardCards: deck.sideboard_cards || [],
+    });
+  });
+
+  if (isOwner) {
+    document.getElementById('pdm-delete').addEventListener('click', async () => {
+      if (!confirm(`Rimuovere "${deck.name}" dai mazzi pubblici?`)) return;
+      const { error } = await db.from('public_decks').delete().eq('id', deck.id);
+      if (error) {
+        showGlobalToast('Errore durante la rimozione.', 'error');
+      } else {
+        showGlobalToast(`"${deck.name}" rimosso dai mazzi pubblici.`, 'success');
+        _decks = _decks.filter(d => String(d.id) !== String(deck.id));
+        renderGrid(_applyClientFilters(_decks));
+        close();
+      }
+    });
+  }
+}
+
+// ── Export code (modal standalone) ───────────────────────────
+function encodeDeck(deck) {
+  const countIds = ids => {
+    const m = {};
+    ids.forEach(id => { m[id] = (m[id] || 0) + 1; });
+    return Object.entries(m).sort(([a],[b]) => Number(a)-Number(b)).map(([id,n]) => `${id}:${n}`).join(',');
+  };
+  const sortIds = ids => [...new Set(ids)].sort((a,b) => Number(a)-Number(b)).join(',');
+  const raw = [
+    deck.commanderId || '',
+    countIds(deck.cards || []),
+    sortIds(deck.territoryCards || []),
+    countIds(deck.sideboardCards || []),
+  ].join('|');
+  return btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+function openExportCodeModal(deck, deckName) {
+  const code = encodeDeck(deck);
+  const el = document.createElement('div');
+  el.className = 'pdm-overlay';
+  el.innerHTML = `
+    <div class="pdm-modal pdm-modal-sm">
+      <div class="pdm-exp-title">Codice mazzo — copia e condividi:</div>
+      <div class="pdm-exp-row">
+        <input class="pdm-exp-inp" id="pdm-exp-inp" type="text" readonly value="${esc(code)}">
+        <button class="pdm-btn pdm-btn-primary" id="pdm-exp-copy">Copia</button>
+      </div>
+      <button class="pdm-btn" id="pdm-exp-close" style="margin-top:12px">Chiudi</button>
+    </div>`;
+  document.body.appendChild(el);
+  el.addEventListener('click', e => { if (e.target === el) el.remove(); });
+  document.getElementById('pdm-exp-close').addEventListener('click', () => el.remove());
+  document.getElementById('pdm-exp-copy').addEventListener('click', () => {
+    navigator.clipboard?.writeText(code).catch(() => {});
+    showGlobalToast('Codice copiato!', 'success');
+  });
+  document.getElementById('pdm-exp-inp').select();
+}
+
+// ── Export image (riusa la stessa logica del deckbuilder) ─────
+async function exportDeckImage(deck) {
+  const CARD_W = 140, CARD_H = 194, GAP = 12, PAD = 48, CANVAS_W = 1600;
+  const SEC_H = 32, SEC_GAP = 30;
+
+  const mkCounts = ids => {
+    const m = {};
+    ids.forEach(id => { m[id] = (m[id] || 0) + 1; });
+    return m;
+  };
+
+  const cmdCard  = deck.commanderId ? CardDatabase.find(c => c.id === deck.commanderId) : null;
+  const CMD_W    = Math.round(CARD_W * 1.2);
+  const CMD_H    = Math.round(CARD_H * 1.2);
+  const CMD_AREA = CMD_W + GAP * 3;
+
+  const terrCounts = mkCounts(deck.territoryCards || []);
+  const terrIds    = Object.keys(terrCounts);
+  const terrAvailW = CANVAS_W - PAD * 2 - CMD_AREA;
+  const TERR_COLS  = Math.max(1, Math.floor((terrAvailW + GAP) / (CARD_W + GAP)));
+  const terrRows   = terrIds.length ? Math.ceil(terrIds.length / TERR_COLS) : 0;
+
+  const topRowH = Math.max(
+    cmdCard ? SEC_H + CMD_H : 0,
+    terrIds.length ? SEC_H + terrRows * (CARD_H + GAP) : 0,
+  );
+
+  const MAIN_COLS = Math.max(1, Math.floor((CANVAS_W - PAD * 2 + GAP) / (CARD_W + GAP)));
+  const mainByType = { Quest: {}, Spell: {}, Minion: {} };
+  (deck.cards || []).forEach(id => {
+    const card = CardDatabase.find(c => c.id === id);
+    const type = (card && mainByType[card.type]) ? card.type : 'Minion';
+    mainByType[type][id] = (mainByType[type][id] || 0) + 1;
+  });
+  const mainSections = ['Quest','Spell','Minion']
+    .map(t => ({ label: t.toUpperCase(), ids: Object.keys(mainByType[t]), counts: mainByType[t] }))
+    .filter(s => s.ids.length);
+
+  const sideCounts = mkCounts(deck.sideboardCards || []);
+  const sideIds    = Object.keys(sideCounts);
+
+  let totalH = 80;
+  if (topRowH) totalH += topRowH + SEC_GAP;
+  mainSections.forEach(s => { totalH += SEC_H + Math.ceil(s.ids.length / MAIN_COLS) * (CARD_H + GAP) + SEC_GAP; });
+  if (sideIds.length) totalH += SEC_H + Math.ceil(sideIds.length / MAIN_COLS) * (CARD_H + GAP) + SEC_GAP;
+  totalH += PAD;
+
+  const allIds = [...new Set([
+    ...(deck.commanderId ? [deck.commanderId] : []),
+    ...terrIds,
+    ...mainSections.flatMap(s => s.ids),
+    ...sideIds,
+  ])];
+  const imgMap = {};
+  await Promise.all(allIds.map(id => {
+    const card = CardDatabase.find(c => c.id === id);
+    if (!card?.image) return Promise.resolve();
+    return new Promise(resolve => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload  = () => { imgMap[id] = img; resolve(); };
+      img.onerror = resolve;
+      img.src = card.image;
+    });
+  }));
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = CANVAS_W;
+  canvas.height = totalH;
+  const ctx = canvas.getContext('2d');
+
+  const ART_SX = 67, ART_SY = 67, ART_SW = 1070, ART_SH = 800;
+  const cmdImg = deck.commanderId ? imgMap[deck.commanderId] : null;
+  if (cmdImg) {
+    ctx.save();
+    ctx.filter = 'blur(18px)';
+    const scale = Math.max(CANVAS_W / ART_SW, totalH / ART_SH);
+    const bw = ART_SW * scale, bh = ART_SH * scale;
+    ctx.drawImage(cmdImg, ART_SX, ART_SY, ART_SW, ART_SH, (CANVAS_W-bw)/2, (totalH-bh)/2, bw, bh);
+    ctx.restore();
+    ctx.fillStyle = 'rgba(5,8,15,0.72)';
+    ctx.fillRect(0, 0, CANVAS_W, totalH);
+  } else {
+    ctx.fillStyle = '#0d1117';
+    ctx.fillRect(0, 0, CANVAS_W, totalH);
+  }
+
+  ctx.fillStyle = '#e8e8e8';
+  ctx.font      = 'bold 54px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(deck.name, CANVAS_W / 2, 52);
+
+  const COLOR_HEX_LOCAL = { blue:'#336699', green:'#385400', red:'#8A0000', black:'#595959', colorless:'#A19993' };
+
+  const drawCard = (id, card, x, y, W, H, count) => {
+    if (imgMap[id]) {
+      ctx.drawImage(imgMap[id], x, y, W, H);
+    } else {
+      ctx.fillStyle = COLOR_HEX_LOCAL[card?.color] ?? '#333333';
+      ctx.fillRect(x, y, W, H);
+      if (card) {
+        ctx.fillStyle = '#ffffff'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(card.name, x + W/2, y + H/2); ctx.textAlign = 'left';
+      }
+    }
+    if (count > 1) {
+      ctx.fillStyle = 'rgba(0,0,0,0.82)'; ctx.fillRect(x+W-26, y+5, 22, 22);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(`×${count}`, x+W-15, y+19); ctx.textAlign = 'left';
+    }
+  };
+
+  const drawSection = (sec, y) => {
+    ctx.fillStyle = '#aaaaaa'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(sec.label, PAD, y + 22);
+    sec.ids.forEach((id, i) => {
+      drawCard(id, CardDatabase.find(c => c.id === id),
+        PAD + (i % MAIN_COLS) * (CARD_W + GAP),
+        y + SEC_H + Math.floor(i / MAIN_COLS) * (CARD_H + GAP),
+        CARD_W, CARD_H, sec.counts[id]);
+    });
+  };
+
+  let y = 80;
+  if (topRowH) {
+    if (cmdCard) {
+      ctx.fillStyle = '#aaaaaa'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText('COMMANDER', PAD, y + 22);
+      drawCard(deck.commanderId, cmdCard, PAD, y + SEC_H, CMD_W, CMD_H, 0);
+    }
+    if (terrIds.length) {
+      const terrX = PAD + (cmdCard ? CMD_AREA : 0);
+      ctx.fillStyle = '#aaaaaa'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
+      ctx.fillText(`TERRITORY  ${(deck.territoryCards||[]).length}/12`, terrX, y + 22);
+      terrIds.forEach((id, i) => {
+        const col = i % TERR_COLS, row = Math.floor(i / TERR_COLS);
+        drawCard(id, CardDatabase.find(c => c.id === id), terrX + col*(CARD_W+GAP), y+SEC_H+row*(CARD_H+GAP), CARD_W, CARD_H, terrCounts[id]);
+      });
+    }
+    y += topRowH + SEC_GAP;
+  }
+
+  mainSections.forEach(sec => {
+    drawSection(sec, y);
+    y += SEC_H + Math.ceil(sec.ids.length / MAIN_COLS) * (CARD_H + GAP) + SEC_GAP;
+  });
+
+  if (sideIds.length) {
+    drawSection({ label: `SIDEBOARD  ${(deck.sideboardCards||[]).length}/10`, ids: sideIds, counts: sideCounts }, y);
+  }
+
+  try {
+    const url = canvas.toDataURL('image/png');
+    const a   = document.createElement('a');
+    a.download = `${deck.name.replace(/[^\w\s-]/g,'').replace(/\s+/g,'_') || 'deck'}.png`;
+    a.href = url;
+    a.click();
+  } catch {
+    showGlobalToast('Export immagine non riuscito (CORS).', 'error');
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -256,6 +571,22 @@ function buildSkeleton() {
 // ─────────────────────────────────────────────────────────────
 // UTILITY
 // ─────────────────────────────────────────────────────────────
+function timeAgo(date) {
+  const mins  = Math.floor((Date.now() - date) / 60000);
+  if (mins < 2)   return 'just now';
+  if (mins < 60)  return `${mins} minutes ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  const days  = Math.floor(hours / 24);
+  if (days < 7)   return `${days} day${days > 1 ? 's' : ''} ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 4)  return `about ${weeks} week${weeks > 1 ? 's' : ''} ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `about ${months} month${months > 1 ? 's' : ''} ago`;
+  const years = Math.floor(days / 365);
+  return `over ${years} year${years > 1 ? 's' : ''} ago`;
+}
+
 function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -326,7 +657,7 @@ function injectStyles() {
 /* ═══ GRIGLIA ════════════════════════════════════════════════ */
 .pd-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 20px;
 }
 
@@ -345,95 +676,337 @@ function injectStyles() {
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border);
-  background: var(--bg-surface);
+  background: var(--bg-elevated);
   cursor: pointer;
   transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
-  display: flex;
-  flex-direction: column;
 }
 .pd-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.65);
   border-color: var(--border-gold);
 }
 
-/* immagine commander */
+/* contenitore immagine — altezza fissa rettangolare */
 .pd-card-img {
   position: relative;
   width: 100%;
-  padding-top: 68%;
-  background-size: 1070px 800px;
-  background-position: -67px -67px;
+  height: 180px;
+  background-size: cover;
+  background-position: center center;
   background-color: var(--bg-elevated);
-  flex-shrink: 0;
+  overflow: hidden;
 }
 
+/* layer blur separato così non sfoca i figli */
+.pd-card-img-blur {
+  position: absolute;
+  inset: -6px;          /* compensa il bleeding del blur */
+  filter: blur(3px);
+  z-index: 0;
+}
+
+/* gradient overlay sopra il blur */
 .pd-card-img-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.72) 100%);
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.08) 0%,
+    rgba(0,0,0,0.45) 55%,
+    rgba(0,0,0,0.82) 100%
+  );
+  z-index: 1;
 }
 
 /* barra colore */
 .pd-card-color-bar {
-  height: 4px;
-  width: 100%;
-  flex-shrink: 0;
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 3;
 }
 
-/* info testo */
+/* info testo sovrapposta in basso */
 .pd-card-info {
-  padding: 10px 12px 12px;
+  position: absolute;
+  bottom: 3px; left: 0; right: 0;
+  padding: 12px 14px 14px;
   display: flex;
   flex-direction: column;
   gap: 3px;
-  flex: 1;
+  z-index: 2;
 }
 
 .pd-card-name {
   font-family: 'Cinzel', serif;
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1);
 }
 
 .pd-card-meta {
-  font-size: 11px;
-  color: var(--text-secondary);
+  font-size: 13px;
+  color: rgba(255,255,255,0.75);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
 }
-.pd-card-date { color: var(--text-faint); font-size: 10px; }
+
+.pd-card-dot {
+  color: rgba(255,255,255,0.4);
+  margin: 0 3px;
+}
 
 /* tag */
 .pd-card-tags {
+  position: absolute;
+  top: 10px;
+  right: 10px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
-  margin-top: 6px;
+  justify-content: flex-end;
+  z-index: 2;
+  max-width: 70%;
 }
 
 .pd-tag-icon {
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1;
 }
 
 .pd-tag {
   font-size: 10px;
-  background: var(--violet-subtle);
-  border: 1px solid rgba(155,143,160,0.25);
+  background: rgba(155,143,160,0.25);
+  border: 1px solid rgba(197,187,208,0.35);
   border-radius: 4px;
   padding: 1px 6px;
-  color: var(--violet-bright);
+  color: rgba(255,255,255,0.85);
   white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
 /* ═══ RESPONSIVE ═════════════════════════════════════════════ */
 @media (max-width: 680px) {
   .pd-toolbar { flex-direction: column; align-items: flex-start; }
-  .pd-grid    { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .pd-grid    { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+}
+
+/* ═══ MODAL DETTAGLIO MAZZO ══════════════════════════════════ */
+.pdm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.pdm-modal {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 540px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.8);
+}
+
+.pdm-modal-sm {
+  max-width: 420px;
+  padding: 24px;
+  gap: 12px;
+}
+
+.pdm-header {
+  position: relative;
+  min-height: 110px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-bottom: 3px solid var(--pdm-color, #555);
+}
+
+.pdm-header-bg {
+  position: absolute;
+  inset: -6px;
+  background-size: 150%;
+  background-position: center 15%;
+  filter: blur(4px);
+}
+
+.pdm-header-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.75) 100%);
+}
+
+.pdm-header-content {
+  position: relative;
+  z-index: 1;
+  padding: 18px 48px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pdm-title {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.9);
+}
+
+.pdm-author {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+}
+
+.pdm-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.pdm-tag {
+  font-size: 10px;
+  background: rgba(155,143,160,0.25);
+  border: 1px solid rgba(197,187,208,0.35);
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: rgba(255,255,255,0.85);
+}
+
+.pdm-close {
+  position: absolute;
+  top: 10px; right: 12px;
+  z-index: 2;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 50%;
+  color: #fff;
+  width: 28px; height: 28px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.pdm-close:hover { background: rgba(255,255,255,0.15); }
+
+.pdm-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+}
+
+.pdm-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pdm-section {}
+
+.pdm-sec-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.pdm-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.pdm-row-cmd { font-weight: 600; }
+
+.pdm-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pdm-name { flex: 1; }
+
+.pdm-qty {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.pdm-actions {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pdm-btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.pdm-btn:hover { border-color: var(--violet); }
+
+.pdm-btn-primary {
+  background: var(--violet);
+  border-color: var(--violet);
+  color: #fff;
+}
+.pdm-btn-primary:hover { background: var(--violet-bright); border-color: var(--violet-bright); }
+
+.pdm-btn-danger {
+  border-color: var(--error);
+  color: var(--error);
+}
+.pdm-btn-danger:hover { background: rgba(var(--error-rgb, 180,40,40), 0.12); }
+
+.pdm-exp-title {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.pdm-exp-row {
+  display: flex;
+  gap: 8px;
+}
+
+.pdm-exp-inp {
+  flex: 1;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 6px 10px;
+  outline: none;
 }
 
   `;
