@@ -1,74 +1,183 @@
 // ============================================================
-// play/play-menu.js — Menù Play e selezione modalità.
+// play/play-menu.js — Room creation / join lobby.
+// Replaces the old play-menu entirely. Handles:
+//   1. Deck validation
+//   2. Host (create room) flow
+//   3. Guest (join room) flow
+//   4. Transition into the game board once both ready
 // ============================================================
 
-import { getCurrentDeck }    from '../../core/state.js';
-import { startAIGame }       from './play-board.js';
-import { updateBackButtons } from '../../core/router.js';
+import { getCurrentDeck }          from '../../core/state.js';
+import { updateBackButtons }       from '../../core/router.js';
+import { GameState, setupPlayer }  from './game-state.js';
+import { renderBoard }             from './board-render.js';
+import {
+  createRoom,
+  joinRoom,
+  sendDeck,
+  destroyPeer,
+} from './networking.js';
+
+// ── Public entry ──────────────────────────────────────────────
 
 export function renderPlayScreen() {
   const screen      = document.getElementById("screen-play");
   const currentDeck = getCurrentDeck();
+  const issues      = validateDeck(currentDeck);
 
   screen.innerHTML = `
-    <div class="row" style="margin-bottom: 16px;">
-      <button class="secondary-btn back-btn">← Indietro</button>
-    </div>
+    <div class="play-lobby">
+      <h2 class="page-title">Play — Multiplayer</h2>
+      <p class="page-subtitle">Create or join a room with a shared key.</p>
 
-    <h2 class="page-title">Play</h2>
-    <p class="page-subtitle">Scegli come giocare.</p>
+      ${issues.length ? `
+        <div class="play-deck-warning">
+          <strong>Deck not ready:</strong>
+          <ul>${issues.map(i => `<li>${i}</li>`).join("")}</ul>
+          <p>Go to the Deck Builder and fix the issues before playing.</p>
+        </div>
+      ` : `
+        <div class="play-deck-ok">
+          <strong>${currentDeck.name}</strong>
+          — Commander: ${currentDeck.commanderId ?? "none"}
+          &nbsp;| Main: ${currentDeck.cards.length}/29
+          &nbsp;| Territory: ${(currentDeck.territoryCards ?? []).length}/12
+        </div>
+      `}
 
-    <div class="play-menu-grid">
-      <div class="play-mode-box">
-        <h3>Vs AI</h3>
-        <p class="muted">Board stile Arena con label piccoli.</p>
-        <p><strong>Mazzo selezionato:</strong> ${currentDeck.name}</p>
-        <p><strong>Main Deck:</strong> ${currentDeck.cards.length} / 29</p>
-        <p><strong>Territory Deck:</strong> ${(currentDeck.territoryCards || []).length} / 12</p>
-        <button id="startAiBtn" class="primary-btn">Avvia Vs AI</button>
-        <div class="status-box" id="aiStatusBox">Board orizzontale compatta.</div>
-      </div>
+      <div class="play-lobby-grid">
 
-      <div class="play-mode-box">
-        <h3>Multiplayer</h3>
-        <p class="muted">Non ancora disponibile.</p>
-        <button id="startMpBtn" class="secondary-btn">Apri Multiplayer</button>
-        <div class="status-box" id="mpStatusBox">Multiplayer in sviluppo.</div>
+        <!-- Host -->
+        <div class="play-mode-box">
+          <h3>Host a Room</h3>
+          <p class="muted">Create a new room and share the key with your opponent.</p>
+          <button class="primary-btn" id="createRoomBtn" ${issues.length ? "disabled" : ""}>
+            Create Room
+          </button>
+          <div class="play-status-msg" id="hostStatus"></div>
+          <div class="play-room-key" id="hostRoomKey" style="display:none">
+            <label>Room Key</label>
+            <div class="play-key-row">
+              <input type="text" class="play-key-input" id="hostKeyDisplay" readonly>
+              <button class="secondary-btn" id="hostCopyBtn">Copy</button>
+            </div>
+            <p class="muted" style="margin-top:8px">Waiting for opponent to join…</p>
+          </div>
+        </div>
+
+        <!-- Join -->
+        <div class="play-mode-box">
+          <h3>Join a Room</h3>
+          <p class="muted">Enter the key shared by your opponent.</p>
+          <div class="play-key-row">
+            <input type="text" class="play-key-input" id="joinKeyInput" placeholder="Paste room key…">
+            <button class="primary-btn" id="joinRoomBtn" ${issues.length ? "disabled" : ""}>
+              Join
+            </button>
+          </div>
+          <div class="play-status-msg" id="joinStatus"></div>
+        </div>
+
       </div>
     </div>
   `;
 
-  document.getElementById("startAiBtn").onclick = () => {
-    const deck   = getCurrentDeck();
-    const issues = getDeckValidationIssuesForPlay(deck);
-    const box    = document.getElementById("aiStatusBox");
-
-    if (issues.length) {
-      box.innerHTML = `
-        Il mazzo non è valido:
-        <ul style="margin-top:8px; padding-left:18px;">
-          ${issues.map(issue => `<li>${issue}</li>`).join("")}
-        </ul>
-      `;
-      return;
-    }
-
-    startAIGame(deck, renderPlayScreen);
-  };
-
-  document.getElementById("startMpBtn").onclick = () => {
-    document.getElementById("mpStatusBox").textContent = "Multiplayer non ancora implementato.";
-  };
-
   updateBackButtons();
+  _attachLobbyEvents(currentDeck);
 }
 
-export function getDeckValidationIssuesForPlay(deck) {
+// ── Lobby event handlers ──────────────────────────────────────
+
+function _attachLobbyEvents(deck) {
+
+  // HOST
+  document.getElementById("createRoomBtn")?.addEventListener("click", () => {
+    document.getElementById("createRoomBtn").disabled = true;
+    _setStatus("hostStatus", "Connecting to PeerJS…");
+
+    createRoom(
+      // onReady: both decks exchanged → render board
+      () => renderBoard(),
+      // onStatus: room key / connection updates
+      (msg, roomKey) => {
+        _setStatus("hostStatus", msg);
+
+        if (roomKey) {
+          const keyBox = document.getElementById("hostRoomKey");
+          const keyIn  = document.getElementById("hostKeyDisplay");
+          if (keyBox && keyIn) {
+            keyBox.style.display = "block";
+            keyIn.value          = roomKey;
+          }
+        }
+
+        // "Opponent connected!" → setup and send our deck
+        if (msg.startsWith("Opponent")) {
+          _prepareAndSendDeck(deck, "p1");
+        }
+      }
+    );
+  });
+
+  document.getElementById("hostCopyBtn")?.addEventListener("click", () => {
+    const val = document.getElementById("hostKeyDisplay")?.value;
+    if (val) navigator.clipboard.writeText(val).catch(() => {});
+  });
+
+  // JOIN
+  document.getElementById("joinRoomBtn")?.addEventListener("click", () => {
+    const key = document.getElementById("joinKeyInput")?.value.trim();
+    if (!key) { _setStatus("joinStatus", "Please enter a room key."); return; }
+
+    document.getElementById("joinRoomBtn").disabled = true;
+    _setStatus("joinStatus", "Connecting…");
+
+    joinRoom(
+      key,
+      // onReady: both decks exchanged → render board
+      () => renderBoard(),
+      // onStatus
+      msg => {
+        _setStatus("joinStatus", msg);
+        // "Connected!" → setup and send our deck
+        if (msg.startsWith("Connected")) {
+          _prepareAndSendDeck(deck, "p2");
+        }
+      }
+    );
+  });
+}
+
+// ── Transition to board ───────────────────────────────────────
+
+// _sendLocalDeck: called as soon as the connection is established
+// (host: when opponent connects; guest: when host confirms).
+// We setup our local side and broadcast our deck.
+// The board only renders once networking fires _onReady (both decks received).
+function _prepareAndSendDeck(deck, myRole) {
+  GameState.myRole = myRole;
+  setupPlayer(myRole, deck.commanderId, deck.cards, deck.territoryCards ?? []);
+
+  sendDeck({
+    commanderId: deck.commanderId,
+    deckIds:     deck.cards,
+    terrIds:     deck.territoryCards ?? [],
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+
+function _setStatus(id, msg) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = msg;
+}
+
+function validateDeck(deck) {
   const issues = [];
-  if (!deck.commanderId) issues.push("Manca il comandante.");
-  if (deck.cards.length !== 29)
-    issues.push(`Il main deck deve contenere 29 carte. Attuali: ${deck.cards.length}.`);
-  if ((deck.territoryCards || []).length !== 12)
-    issues.push(`Il territory deck deve contenere 12 carte. Attuali: ${(deck.territoryCards || []).length}.`);
+  if (!deck)                                issues.push("No deck selected.");
+  if (deck && !deck.commanderId)            issues.push("Missing commander.");
+  if (deck && deck.cards.length !== 29)     issues.push(`Main deck must have exactly 29 cards (has ${deck?.cards?.length ?? 0}).`);
+  if (deck && (deck.territoryCards ?? []).length !== 12)
+    issues.push(`Territory deck must have exactly 12 cards (has ${(deck?.territoryCards ?? []).length}).`);
   return issues;
 }

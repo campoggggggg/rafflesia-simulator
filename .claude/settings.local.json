@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"c:/Users/gabri/OneDrive/Desktop/repository github/rafflesia-simulator\" ls-files src/css/)"
+    ]
+  }
+}
