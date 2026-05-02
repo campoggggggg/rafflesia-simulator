@@ -15,7 +15,7 @@ import { initSporeCanvas } from './particles.js';
 
 import { renderHomeScreen } from '../screens/home.js';
 import { renderPlayScreen } from '../screens/play/play-menu.js';
-import { renderDeckBuilderScreen } from '../screens/deckbuilder.js';
+import { renderDeckBuilderScreen, populateSubtypeDropdown } from '../screens/deckbuilder.js';
 import { renderSettingsScreen } from '../screens/settings.js';
 import { renderAuthScreen } from '../auth/auth-screen.js';
 import { renderAdvancedSearchScreen } from '../screens/advancedsearch/index.js';
@@ -123,6 +123,7 @@ async function initApp() {
   initSporeCanvas();
 
   await syncCardsFromSupabase();
+  populateSubtypeDropdown();
 }
 
 initApp();

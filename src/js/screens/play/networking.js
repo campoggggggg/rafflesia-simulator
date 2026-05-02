@@ -9,7 +9,7 @@
 //   "deck"        → each player sends their deck data after welcome
 //   "action"      → any in-game mutation: { fn, args }
 //   "snapshot"    → full state resync (fallback)
-//   "chat"        → log message forwarded
+//   "chat"        → chat message: { text }
 // ============================================================
 
 import {
@@ -108,6 +108,16 @@ export function broadcastSnapshot() {
   send({ type: "snapshot", payload: getStateSnapshot() });
 }
 
+/** Broadcast a chat message to the peer. */
+export function broadcastChat(text) {
+  send({ type: "chat", payload: { text } });
+}
+
+/** Broadcast the local hand to show opponent — sends card data (name + image). */
+export function broadcastShowHand(cards) {
+  send({ type: "showhand", payload: { cards } });
+}
+
 export function isConnected() { return _conn && _conn.open; }
 
 export function destroyPeer() {
@@ -146,23 +156,32 @@ function _handle(msg) {
   switch (msg.type) {
 
     case "hello": {
-      // Host receives hello → send welcome with full state
+      // Host receives hello → send welcome with state + own deck (so p2 can start immediately)
       send({
         type:    "welcome",
-        payload: { role: "p2", snapshot: getStateSnapshot() },
+        payload: {
+          role:     "p2",
+          snapshot: getStateSnapshot(),
+          hostDeck: _myDeck,   // may be null if host hasn't set up yet — p2 will wait for "deck" msg
+        },
       });
       break;
     }
 
     case "welcome": {
-      // Joiner receives their role (always p2)
+      // Joiner receives role and optional host deck
       GameState.myRole = msg.payload.role;
       applyStateSnapshot(msg.payload.snapshot);
+      // If host already sent their deck inside welcome, buffer it
+      if (msg.payload.hostDeck) {
+        _peerDeck = msg.payload.hostDeck;
+        _tryStartGame();
+      }
       break;
     }
 
     case "deck": {
-      // Peer sent their deck. Buffer it.
+      // Peer sent their deck (either as standalone or as fallback after welcome)
       _peerDeck = msg.payload;
       _tryStartGame();
       break;
@@ -180,6 +199,20 @@ function _handle(msg) {
     case "snapshot": {
       applyStateSnapshot(msg.payload);
       _renderBoard();
+      break;
+    }
+
+    case "chat": {
+      import('./board-render.js').then(({ appendChatMessage }) => {
+        appendChatMessage(msg.payload.text);
+      });
+      break;
+    }
+
+    case "showhand": {
+      import('./board-render.js').then(({ openHandReveal }) => {
+        openHandReveal(msg.payload.cards);
+      });
       break;
     }
   }

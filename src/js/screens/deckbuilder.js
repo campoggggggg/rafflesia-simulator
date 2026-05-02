@@ -481,7 +481,7 @@ function renderDeckPanel() {
         ${mkSection('COMMANDER', commanderRow(deck))}
         ${mkSection('QUEST', cardGroup(groups.Quest || {}, 'main'))}
         ${mkSection('SPELL', cardGroup(groups.Spell || {}, 'main'))}
-        ${mkSection(`TERRITORY <span class="db-cnt">${deck.territoryCards.length}/${MAX_TERRITORY}</span>`, cardGroup(territory, 'territory'))}
+        ${mkSection(`TERRITORY <span class="db-cnt">${deck.territoryCards.length}/${MAX_TERRITORY}</span>${mkAutofillBtn(!!deck.commanderId)}`, cardGroup(territory, 'territory'))}
         ${mkSection('MANA CURVE', renderManaCurve(deck), 'db-section-chart')}
       </div>
       <div class="db-dc db-dc-right">
@@ -502,6 +502,11 @@ function renderDeckPanel() {
       row.addEventListener('mouseleave', hideTooltip);
     }
   });
+
+  document.getElementById('db-autofill-btn')?.addEventListener('click', e => {
+    e.stopPropagation();
+    doAutofill();
+  });
 }
 
 function mkSection(title, content, className = '') {
@@ -511,6 +516,38 @@ function mkSection(title, content, className = '') {
       <div class="db-sec-list">${content}</div>
     </div>
   `;
+}
+
+function mkAutofillBtn(hasCommander) {
+  return ` <button class="db-autofill-btn${hasCommander ? '' : ' db-autofill-btn--off'}" id="db-autofill-btn" title="${hasCommander ? 'Riempi i territory mancanti con il colore del commander' : 'Serve un commander per usare autofill'}">autofill</button>`;
+}
+
+function doAutofill() {
+  const deck = getCurrentDeck();
+  ensure(deck);
+  if (!deck.commanderId) {
+    showToast('Aggiungi prima un commander per usare autofill.');
+    return;
+  }
+  const commander = CardDatabase.find(c => c.id === deck.commanderId);
+  if (!commander) return;
+
+  const missing = MAX_TERRITORY - deck.territoryCards.length;
+  if (missing <= 0) { showToast('Territory già pieno.'); return; }
+
+  const candidates = CardDatabase.filter(c =>
+    c.type === 'Territory' && c.color === commander.color
+  );
+  if (!candidates.length) {
+    showToast(`Nessun territory di colore ${commander.color} disponibile.`);
+    return;
+  }
+
+  for (let i = 0; i < missing; i++) {
+    const pick = candidates[i % candidates.length];
+    deck.territoryCards.push(pick.id);
+  }
+  saveDecks(); renderDeckPanel(); renderCardList();
 }
 
 function commanderRow(deck) {
@@ -580,6 +617,12 @@ function makePips(card) {
   const cc  = card.cost_color   ?? 0;
   const col = COLOR_HEX[card.color] ?? COLOR_HEX.colorless;
   const gem = card.rarity === 'Legendary' ? `<span class="db-leg-gem">◆</span>` : '';
+  if (card.type === 'Territory') {
+    return `<div class="db-pips">
+      ${gem}
+      <span class="db-pip-territory" style="--terr-c:${col}" title="${card.color}">◆</span>
+    </div>`;
+  }
   return `<div class="db-pips">
     ${gem}
     <span class="db-pip db-pip-n">${nc}</span>
@@ -681,13 +724,13 @@ function addCard(card) {
   ensure(deck);
   const commander = deck.commanderId ? CardDatabase.find(c => c.id === deck.commanderId) : null;
 
-  // 1. Nessun commander → la prima carta legendary (non territory) diventa commander
+  // 1. Nessun commander → la prima carta legendary diventa commander
   if (!deck.commanderId) {
     if (card.rarity === 'Legendary' && card.type !== 'Territory') {
       deck.commanderId = card.id;
       saveDecks(); renderDeckPanel(); renderCardList(); return;
     }
-    showToast('Aggiungi prima un Legendary (non Territory) come commander.');
+    showToast('Aggiungi prima un Legendary come commander.');
     return;
   }
 
@@ -792,12 +835,16 @@ function onNew() {
 }
 
 function onDelete() {
+  if (AppState.decks.length <= 1) {
+    showToast('Non puoi eliminare l\'unico mazzo.');
+    return;
+  }
   const deck = getCurrentDeck();
   openDialog(`Eliminare il mazzo "${esc(deck.name)}"?`, null, async () => {
-    if (AppState.decks.length <= 1) { showToast('Devi avere almeno un mazzo.'); return; }
     const deleted = AppState.decks.find(d => String(d.id) === String(AppState.currentDeckId));
-    AppState.decks         = AppState.decks.filter(d => String(d.id) !== String(AppState.currentDeckId));
-    AppState.currentDeckId = AppState.decks[0].id;
+    const remaining = AppState.decks.filter(d => String(d.id) !== String(AppState.currentDeckId));
+    AppState.decks         = remaining;
+    AppState.currentDeckId = remaining[0].id;
     if (deleted) await deleteDeckFromSupabase(deleted).catch(() => {});
     renderDeckBuilderScreen();
   });

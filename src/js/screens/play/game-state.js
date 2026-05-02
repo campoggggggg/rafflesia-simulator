@@ -86,6 +86,9 @@ export const GameState = {
   log:          [],
   // Drag-drop tracking (client-only, not synced)
   dragging:     null,     // { card, fromZone, fromRole }
+  // Show-hand flag: set by local player, read by opponent renderer
+  handShown:    false,    // local player is showing their hand to opponent
+  showOppHand:  false,    // opponent is showing their hand to us
 };
 
 // ── Lookup helpers ────────────────────────────────────────────
@@ -142,9 +145,8 @@ export function log(msg) {
 export function setupPlayer(role, commanderId, deckIds, terrIds) {
   const p = getPlayer(role);
 
-  // Reset
+  // Reset player state (non azzerare _nextInstanceId: i due giocatori devono avere ID unici)
   Object.assign(p, emptyPlayer(role));
-  _nextInstanceId = 1;
 
   // Commander — face up
   p.commanderCard = makeCard(commanderId, role, "commanderCard", true);
@@ -166,6 +168,7 @@ export function setupPlayer(role, commanderId, deckIds, terrIds) {
 export function drawCard(role, doLog = true) {
   const p = getPlayer(role);
   if (!p.deck.length) { if (doLog) log(`${role}: deck empty!`); return null; }
+  if (p.hand.length >= 12) { if (doLog) log(`${role}: hand full (max 12).`); return null; }
   const card = p.deck.shift();
   card.zone  = "hand";
   card.faceUp = true;
@@ -246,13 +249,16 @@ export function getStateSnapshot() {
     p1:         GameState.p1,
     p2:         GameState.p2,
     log:        GameState.log,
+    handShown:  GameState.handShown,  // local player's show-hand flag
   }));
 }
 
 export function applyStateSnapshot(snap) {
-  GameState.phase      = snap.phase;
-  GameState.activeRole = snap.activeRole;
-  GameState.p1         = snap.p1;
-  GameState.p2         = snap.p2;
-  GameState.log        = snap.log;
+  GameState.phase       = snap.phase;
+  GameState.activeRole  = snap.activeRole;
+  GameState.p1          = snap.p1;
+  GameState.p2          = snap.p2;
+  GameState.log         = snap.log;
+  // The sender's handShown becomes our showOppHand
+  GameState.showOppHand = !!snap.handShown;
 }

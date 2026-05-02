@@ -167,6 +167,20 @@ export const playTerritory = synced("playTerritory", (role) => {
   _playTerritory(role);
 });
 
+// Tap all: ruota a 90° tutte le territory non già ruotate
+export const tapAllTerritories = synced("tapAllTerritories", (role) => {
+  const p = GameState[role];
+  p.territoryZone.forEach(c => { if (c.rotation === 0) c.rotation = 90; });
+  log(`${role} tapped all territories.`);
+});
+
+// Untap all: riporta a 0° tutte le territory ruotate
+export const untapAllTerritories = synced("untapAllTerritories", (role) => {
+  const p = GameState[role];
+  p.territoryZone.forEach(c => { if (c.rotation !== 0) c.rotation = 0; });
+  log(`${role} untapped all territories.`);
+});
+
 // ── Draw ──────────────────────────────────────────────────────
 
 export const drawOne = synced("drawOne", (role) => {
@@ -267,9 +281,13 @@ export function getContextActions(card, fromZone) {
   ];
 
   if (fromZone === "territoryZone") return [
-    { label: "Rotate",  action: () => rotateCard(id) },
-    { label: "To grave",action: () => sendToGraveyard(id) },
-    { label: "Banish",  action: () => banishCard(id) },
+    { label: "Rotate",      action: () => rotateCard(id) },
+    { label: "To grave",    action: () => sendToGraveyard(id) },
+    { label: "Banish",      action: () => banishCard(id) },
+    { label: "Top deck",    action: () => topDeck(id) },
+    { label: "Bottom deck", action: () => bottomDeck(id) },
+    { label: "Tap all",     action: () => tapAllTerritories(card.owner) },
+    { label: "Untap all",   action: () => untapAllTerritories(card.owner) },
   ];
 
   if (fromZone === "graveyard" || fromZone === "banished") return [

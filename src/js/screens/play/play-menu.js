@@ -95,7 +95,17 @@ export function renderPlayScreen() {
 
   updateBackButtons();
 
-  document.getElementById("playDeckSelect")?.addEventListener("change", e => {
+  const deckSelect = document.getElementById("playDeckSelect");
+  deckSelect?.addEventListener("mousedown", () => {
+    const sel = document.getElementById("playDeckSelect");
+    if (!sel) return;
+    const currentVal = sel.value;
+    sel.innerHTML = AppState.decks.map(d =>
+      `<option value="${d.id}" ${String(d.id) === String(AppState.currentDeckId) ? "selected" : ""}>${_esc(d.name)}</option>`
+    ).join("");
+    sel.value = currentVal;
+  });
+  deckSelect?.addEventListener("change", e => {
     AppState.currentDeckId = e.target.value;
     renderPlayScreen();
   });
@@ -136,9 +146,11 @@ function _attachLobbyEvents(deck) {
     );
   });
 
-  document.getElementById("hostCopyBtn")?.addEventListener("click", () => {
+  document.getElementById("hostCopyBtn")?.addEventListener("click", (e) => {
     const val = document.getElementById("hostKeyDisplay")?.value;
-    if (val) navigator.clipboard.writeText(val).catch(() => {});
+    if (!val) return;
+    navigator.clipboard.writeText(val).catch(() => {});
+    _showCopiedToast(e.currentTarget);
   });
 
   // JOIN
@@ -187,6 +199,46 @@ function _prepareAndSendDeck(deck, myRole) {
 function _setStatus(id, msg) {
   const el = document.getElementById(id);
   if (el) el.textContent = msg;
+}
+
+function _showCopiedToast(anchor) {
+  const existing = document.getElementById("_copiedToast");
+  if (existing) existing.remove();
+
+  const toast = document.createElement("div");
+  toast.id = "_copiedToast";
+  toast.textContent = "Copied!";
+  toast.style.cssText = `
+    position:fixed; z-index:99999; background:rgba(47,58,52,0.95);
+    color:#c8d5c8; font-size:13px; font-family:'Inter',sans-serif;
+    padding:5px 14px; border-radius:6px; border:0.5px solid rgba(95,139,111,0.50);
+    box-shadow:0 4px 16px rgba(0,0,0,0.60); pointer-events:none;
+    animation: _fadeInOut 1.6s ease forwards;
+  `;
+
+  // Posiziona sopra il bottone
+  const rect = anchor.getBoundingClientRect();
+  toast.style.left = `${rect.left + rect.width / 2}px`;
+  toast.style.top  = `${rect.top - 36}px`;
+  toast.style.transform = "translateX(-50%)";
+
+  // Keyframe inline
+  if (!document.getElementById("_copiedToastStyle")) {
+    const style = document.createElement("style");
+    style.id = "_copiedToastStyle";
+    style.textContent = `
+      @keyframes _fadeInOut {
+        0%   { opacity:0; transform:translateX(-50%) translateY(4px); }
+        15%  { opacity:1; transform:translateX(-50%) translateY(0); }
+        70%  { opacity:1; }
+        100% { opacity:0; transform:translateX(-50%) translateY(-4px); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 1650);
 }
 
 function _esc(str) {
