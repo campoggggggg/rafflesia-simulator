@@ -5,7 +5,7 @@
 // caricato da index.html come <script type="module">.
 // ============================================================
 
-import { navigateTo, setNavigationHistory } from './router.js';
+import { navigateTo, setNavigationHistory, screenFromPath } from './router.js';
 import { showGlobalToast, updateGlobalUI } from './ui.js';
 import { signOut, onAuthChange, ensureProfile } from '../auth/auth.js';
 import { onLoginLoadDecks } from '../data/decks.js';
@@ -32,7 +32,7 @@ function goToDeckBuilder() {
 }
 
 function initNavigation() {
-  document.querySelectorAll('.nav-btn[data-screen]').forEach(btn => {
+  document.querySelectorAll('[data-screen]').forEach(btn => {
     btn.addEventListener("click", async () => {
       if (btn.dataset.screen === "deckbuilder") {
         goToDeckBuilder();
@@ -45,45 +45,39 @@ function initNavigation() {
         return;
       }
 
+      if (btn.dataset.screen === "auth") {
+        if (btn.id === "signInBtn" && AppState.username) {
+          try { await signOut(); } catch (e) { console.warn("Logout:", e.message); }
+          return;
+        }
+        await goToAuthScreen();
+        return;
+      }
+
       navigateTo(btn.dataset.screen);
     });
   });
-
-  const authBtn = document.getElementById("authSidebarBtn");
-  if (authBtn) {
-    authBtn.addEventListener("click", async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      if (AppState.username) {
-        try { await signOut(); } catch (e) { console.warn("Logout:", e.message); }
-      } else {
-        await goToAuthScreen();
-      }
-    });
-  }
 }
 
-function initSidebarToggle() {
-  const sidebar = document.getElementById("sidebar");
-  const collapseBtn = document.getElementById("sidebarCollapseBtn");
-  const expandBtn = document.getElementById("sidebarExpandBtn");
-  if (!sidebar || !collapseBtn || !expandBtn) return;
+function initTopbar() {
+  const exploreToggle = document.getElementById("exploreToggle");
+  const exploreMenu   = document.getElementById("exploreMenu");
+  if (exploreToggle && exploreMenu) {
+    exploreToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      exploreMenu.classList.toggle("open");
+    });
+    document.addEventListener("click", () => exploreMenu.classList.remove("open"));
+  }
 
-  collapseBtn.addEventListener("click", () => {
-    sidebar.classList.add("collapsed");
-    expandBtn.style.display = "flex";
-  });
-
-  expandBtn.addEventListener("click", () => {
-    sidebar.classList.remove("collapsed");
-    expandBtn.style.display = "none";
+  document.getElementById("darkModeBtn")?.addEventListener("click", () => {
+    document.body.classList.toggle("theme-light");
   });
 }
 
 async function initApp() {
   initNavigation();
-  initSidebarToggle();
+  initTopbar();
 
   try { renderHomeScreen(); } catch (e) { console.error("renderHomeScreen:", e); }
   try { renderPlayScreen(); } catch (e) { console.error("renderPlayScreen:", e); }
@@ -95,8 +89,15 @@ async function initApp() {
 
   document.body.classList.toggle("theme-light", AppState.settings.theme === "light");
 
-  setNavigationHistory(["home"]);
-  navigateTo("home", false);
+  // Determina la schermata iniziale dall'URL corrente
+  const initialScreen = screenFromPath(location.pathname);
+  const isProtected = ["settings", "deckbuilder"].includes(initialScreen);
+  const startScreen = isProtected ? "home" : initialScreen;
+
+  setNavigationHistory([startScreen]);
+  // Sostituisce l'entry corrente nella history del browser con lo stato iniziale
+  history.replaceState({ screen: startScreen }, "", location.pathname);
+  navigateTo(startScreen, false);
 
   let _initialAuthHandled = false;
 

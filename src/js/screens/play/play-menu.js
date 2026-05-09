@@ -41,6 +41,13 @@ export function renderPlayScreen() {
         </select>
       </div>
 
+      <div class="play-deck-select-row">
+        <label for="playUsernameInput">Username:</label>
+        <input id="playUsernameInput" class="play-key-input" type="text"
+               placeholder="Enter your name…" maxlength="24"
+               value="${_esc(GameState.username || '')}">
+      </div>
+
       ${issues.length ? `
         <div class="play-deck-warning">
           <strong>Deck not ready:</strong>
@@ -117,15 +124,23 @@ export function renderPlayScreen() {
 
 function _attachLobbyEvents(deck) {
 
+  // Salva username ogni volta che cambia
+  document.getElementById("playUsernameInput")?.addEventListener("input", e => {
+    GameState.username = e.target.value.trim() || null;
+  });
+  // Inizializza subito dal valore attuale del campo
+  const usernameVal = document.getElementById("playUsernameInput")?.value.trim();
+  if (usernameVal) GameState.username = usernameVal;
+
   // HOST
   document.getElementById("createRoomBtn")?.addEventListener("click", () => {
     document.getElementById("createRoomBtn").disabled = true;
     _setStatus("hostStatus", "Connecting to PeerJS…");
 
     createRoom(
-      // onReady: both decks exchanged → render board
-      () => renderBoard(),
-      // onStatus: room key / connection updates
+      // onReady: both decks exchanged → mostra coin flip per l'host
+      () => _showCoinFlipScreen(),
+      // onStatus
       (msg, roomKey) => {
         _setStatus("hostStatus", msg);
 
@@ -138,7 +153,6 @@ function _attachLobbyEvents(deck) {
           }
         }
 
-        // "Opponent connected!" → setup and send our deck
         if (msg.startsWith("Opponent")) {
           _prepareAndSendDeck(deck, "p1");
         }
@@ -163,7 +177,6 @@ function _attachLobbyEvents(deck) {
 
     joinRoom(
       key,
-      // onReady: both decks exchanged → render board
       () => renderBoard(),
       // onStatus
       msg => {
@@ -199,6 +212,76 @@ function _prepareAndSendDeck(deck, myRole) {
 function _setStatus(id, msg) {
   const el = document.getElementById(id);
   if (el) el.textContent = msg;
+}
+
+// ── Coin flip (solo host) ─────────────────────────────────────
+
+function _showCoinFlipScreen() {
+  const screen = document.getElementById("screen-play");
+  screen.innerHTML = `
+    <div class="play-coinflip">
+      <h2 class="play-coinflip-title">Coin Flip</h2>
+      <p class="play-coinflip-sub">You created the room. Call the coin!</p>
+      <div class="play-coinflip-choices">
+        <button class="play-coinflip-btn" id="cfHeads">Heads</button>
+        <button class="play-coinflip-btn" id="cfTails">Tails</button>
+      </div>
+      <div class="play-coinflip-result" id="cfResult" style="display:none"></div>
+    </div>
+  `;
+
+  document.getElementById("cfHeads")?.addEventListener("click", () => _flipCoin("Heads"));
+  document.getElementById("cfTails")?.addEventListener("click", () => _flipCoin("Tails"));
+}
+
+function _flipCoin(choice) {
+  const result = Math.random() < 0.5 ? "Heads" : "Tails";
+  const won    = result === choice;
+
+  document.getElementById("cfHeads").disabled = true;
+  document.getElementById("cfTails").disabled = true;
+
+  const resultEl = document.getElementById("cfResult");
+  resultEl.style.display = "block";
+  resultEl.innerHTML = `
+    <div class="play-coinflip-outcome ${won ? "play-coinflip-win" : "play-coinflip-lose"}">
+      The coin landed on <strong>${result}</strong> — you ${won ? "won!" : "lost!"}
+    </div>
+    ${won ? `
+      <p class="play-coinflip-sub">You called it! Do you want to go first or second?</p>
+      <div class="play-coinflip-choices">
+        <button class="play-coinflip-btn" id="cfFirst">Go First</button>
+        <button class="play-coinflip-btn" id="cfSecond">Go Second</button>
+      </div>
+    ` : `
+      <p class="play-coinflip-sub">Your opponent goes first.</p>
+      <div class="play-coinflip-choices">
+        <button class="play-coinflip-btn" id="cfContinue">Continue</button>
+      </div>
+    `}
+  `;
+
+  if (won) {
+    document.getElementById("cfFirst")?.addEventListener("click", () => {
+      // p1 (host) inizia
+      import('./game-state.js').then(({ GameState: GS }) => { GS.activeRole = "p1"; });
+      import('./networking.js').then(({ broadcastSnapshot }) => broadcastSnapshot());
+      renderBoard();
+    });
+    document.getElementById("cfSecond")?.addEventListener("click", () => {
+      // p2 (guest) inizia
+      import('./game-state.js').then(({ GameState: GS }) => { GS.activeRole = "p2"; });
+      import('./networking.js').then(({ broadcastSnapshot }) => broadcastSnapshot());
+      renderBoard();
+    });
+  } else {
+    document.getElementById("cfContinue")?.addEventListener("click", () => {
+      // p2 inizia di default quando p1 perde
+      import('./game-state.js').then(({ GameState: GS }) => { GS.activeRole = "p2"; });
+      import('./networking.js').then(({ broadcastSnapshot }) => broadcastSnapshot());
+      renderBoard();
+    });
+  }
 }
 
 function _showCopiedToast(anchor) {

@@ -26,10 +26,12 @@ import {
   setPhase          as _setPhase,
   toggleTurn        as _toggleTurn,
   playTerritoryCard as _playTerritory,
+  displayName,
   log,
 } from './game-state.js';
 
 import { broadcastAction, registerAction } from './networking.js';
+import { playSound }                       from './sound.js';
 // board-render is imported lazily inside functions to break the
 // circular-at-eval-time issue.
 
@@ -45,6 +47,34 @@ function closeMenu() {
   import('./board-render.js').then(m => m.closeContextMenu());
 }
 
+// Mappa azione → suono (solo le azioni locali, non il replay del peer)
+const ACTION_SOUNDS = {
+  summonCard:          "card-play",
+  setCardSecondary:    "card-play",
+  activateSpell:       "card-activate",
+  activateQuest:       "card-play",
+  sendToGraveyard:     "card-activate",
+  banishCard:          "card-activate",
+  topDeck:             "card-play",
+  bottomDeck:          "card-play",
+  returnToHand:        "card-draw",
+  declareAttack:       "button",
+  flipCardFaceUp:      "card-activate",
+  sapCard:             "button",
+  sapMinion:           "button",
+  unsapMinion:         "button",
+  addDamage:           "counter-add",
+  addCounter:          "counter-add",
+  playTerritory:       "card-play",
+  sapAllTerritories:   "button",
+  unsapAllTerritories: "button",
+  drawOne:             "card-draw",
+  setPhase:            "button",
+  endTurn:             "button",
+  adjustLife:          "life-change",
+  setLifePoints:       "life-change",
+};
+
 /**
  * Wrap a pure-mutation function so it:
  *   - Registers itself for peer replay via registerAction.
@@ -58,6 +88,9 @@ function synced(name, localFn) {
     broadcastAction(name, args);
     closeMenu();
     render();
+    // Suono solo per chi esegue l'azione (non il peer replay)
+    const sfx = ACTION_SOUNDS[name];
+    if (sfx) playSound(sfx);
   };
 }
 
@@ -157,8 +190,48 @@ export const flipCardFaceUp = synced("flipCardFaceUp", (instanceId) => {
   if (found) { found.card.faceUp = true; log(`${found.card.name} flipped face-up.`); }
 });
 
-export const rotateCard = synced("rotateCard", (instanceId) => {
+// Sap (ex rotate) — per qualsiasi carta
+export const sapCard = synced("sapCard", (instanceId) => {
   _toggleRotation(instanceId);
+  const found = findAny(instanceId);
+  if (found) log(`${displayName(found.card.owner)} sapped ${found.card.name}.`);
+});
+
+// Sap minion
+export const sapMinion = synced("sapMinion", (instanceId) => {
+  const found = findAny(instanceId);
+  if (!found) return;
+  found.card.rotation = 90;
+  log(`${displayName(found.card.owner)} sapped ${found.card.name}.`);
+});
+
+// Unsap minion
+export const unsapMinion = synced("unsapMinion", (instanceId) => {
+  const found = findAny(instanceId);
+  if (!found) return;
+  found.card.rotation = 0;
+  log(`${displayName(found.card.owner)} unsapped ${found.card.name}.`);
+});
+
+// ── Damage on minions ─────────────────────────────────────────
+
+export const addDamage = synced("addDamage", (instanceId, amount) => {
+  const found = findAny(instanceId);
+  if (!found) return;
+  found.card.damage = Math.max(0, (found.card.damage || 0) + amount);
+  log(`${displayName(found.card.owner)}: ${found.card.name} has ${found.card.damage} damage.`);
+});
+
+export const addCounter = synced("addCounter", (instanceId, amount) => {
+  const found = findAny(instanceId);
+  if (!found) return;
+  found.card.counters = Math.max(0, (found.card.counters || 0) + amount);
+  if (amount > 0)
+    log(`${displayName(found.card.owner)} added a counter to ${found.card.name} (${found.card.counters}).`);
+  else if (found.card.counters === 0)
+    log(`${displayName(found.card.owner)} removed all counters from ${found.card.name}.`);
+  else
+    log(`${displayName(found.card.owner)} removed a counter from ${found.card.name} (${found.card.counters}).`);
 });
 
 // ── Territory ─────────────────────────────────────────────────
@@ -167,18 +240,18 @@ export const playTerritory = synced("playTerritory", (role) => {
   _playTerritory(role);
 });
 
-// Tap all: ruota a 90° tutte le territory non già ruotate
-export const tapAllTerritories = synced("tapAllTerritories", (role) => {
+// Sap all territories
+export const sapAllTerritories = synced("sapAllTerritories", (role) => {
   const p = GameState[role];
   p.territoryZone.forEach(c => { if (c.rotation === 0) c.rotation = 90; });
-  log(`${role} tapped all territories.`);
+  log(`${displayName(role)} sapped all territories.`);
 });
 
-// Untap all: riporta a 0° tutte le territory ruotate
-export const untapAllTerritories = synced("untapAllTerritories", (role) => {
+// Unsap all territories
+export const unsapAllTerritories = synced("unsapAllTerritories", (role) => {
   const p = GameState[role];
   p.territoryZone.forEach(c => { if (c.rotation !== 0) c.rotation = 0; });
-  log(`${role} untapped all territories.`);
+  log(`${displayName(role)} unsapped all territories.`);
 });
 
 // ── Draw ──────────────────────────────────────────────────────
@@ -259,12 +332,14 @@ export function getContextActions(card, fromZone) {
   }
 
   if (fromZone === "primaryZone") return [
-    { label: "To grave",    action: () => sendToGraveyard(id) },
-    { label: "Banish",      action: () => banishCard(id) },
-    { label: "Declare",     action: () => declareAttack(id) },
-    { label: "Top deck",    action: () => topDeck(id) },
-    { label: "Bottom deck", action: () => bottomDeck(id) },
-    { label: "To hand",     action: () => returnToHand(id) },
+    { label: "Sap",          action: () => sapMinion(id) },
+    { label: "Unsap",        action: () => unsapMinion(id) },
+    { label: "To grave",     action: () => sendToGraveyard(id) },
+    { label: "Banish",       action: () => banishCard(id) },
+    { label: "Declare",      action: () => declareAttack(id) },
+    { label: "Top deck",     action: () => topDeck(id) },
+    { label: "Bottom deck",  action: () => bottomDeck(id) },
+    { label: "To hand",      action: () => returnToHand(id) },
   ];
 
   if (fromZone === "secondaryZone") return [
@@ -281,13 +356,13 @@ export function getContextActions(card, fromZone) {
   ];
 
   if (fromZone === "territoryZone") return [
-    { label: "Rotate",      action: () => rotateCard(id) },
-    { label: "To grave",    action: () => sendToGraveyard(id) },
-    { label: "Banish",      action: () => banishCard(id) },
-    { label: "Top deck",    action: () => topDeck(id) },
-    { label: "Bottom deck", action: () => bottomDeck(id) },
-    { label: "Tap all",     action: () => tapAllTerritories(card.owner) },
-    { label: "Untap all",   action: () => untapAllTerritories(card.owner) },
+    { label: "Sap",          action: () => sapCard(id) },
+    { label: "To grave",     action: () => sendToGraveyard(id) },
+    { label: "Banish",       action: () => banishCard(id) },
+    { label: "Top deck",     action: () => topDeck(id) },
+    { label: "Bottom deck",  action: () => bottomDeck(id) },
+    { label: "Sap all",      action: () => sapAllTerritories(card.owner) },
+    { label: "Unsap all",    action: () => unsapAllTerritories(card.owner) },
   ];
 
   if (fromZone === "graveyard" || fromZone === "banished") return [

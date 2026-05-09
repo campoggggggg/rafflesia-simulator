@@ -15,9 +15,17 @@ function applyUserToUI(user) {
     ? (user.user_metadata?.username || user.email?.split("@")[0] || "")
     : "";
 
-  const btn = document.getElementById("authSidebarBtn");
-  if (!btn) return;
-  btn.textContent = user ? `${AppState.username} · Esci` : "Accedi";
+  const signInBtn   = document.getElementById("signInBtn");
+  const registerBtn = document.getElementById("registerBtn");
+  if (!signInBtn || !registerBtn) return;
+
+  if (user) {
+    signInBtn.textContent = `${AppState.username} · Sign Out`;
+    registerBtn.style.display = "none";
+  } else {
+    signInBtn.textContent = "Sign In";
+    registerBtn.style.display = "";
+  }
 }
 
 export function updateGlobalUI(userOverride) {

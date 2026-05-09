@@ -7,6 +7,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  padding: calc(58px + 32px) 36px 32px;
 }
 
 /* ── Top bar ──────────────────────────────────────────────────*/
@@ -14,8 +15,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 14px;
-  margin-bottom: 16px;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
   border-bottom: 1px solid var(--border);
   gap: 12px;
   flex-wrap: wrap;
@@ -25,13 +26,21 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 0 6px;
+  padding: 0;
 }
 
 .db-tb-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.db-tb-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .db-tb-sep {
@@ -61,21 +70,21 @@
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   color: var(--text-secondary);
-  padding: 5px 13px;
+  padding: 6px 14px;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 500;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
   white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 .db-btn:hover {
   background: var(--bg-surface);
   color: var(--text-primary);
   border-color: var(--accent-forest);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 .db-btn:active { transform: translateY(1px); box-shadow: none; }
 
@@ -83,13 +92,15 @@
   background: var(--accent-forest);
   color: var(--text-primary);
   border-color: color-mix(in srgb, var(--accent-forest) 70%, white);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .db-btn-primary:hover { background: color-mix(in srgb, var(--accent-forest) 80%, white 20%); }
 
 .db-btn-danger {
   color: var(--accent-burgundy);
   border-color: var(--accent-burgundy);
-  background: rgba(110,88,89,0.08);
+  background: rgba(110,88,89,0.1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,100,100,0.05);
 }
 .db-btn-danger:hover { background: rgba(110,88,89,0.22); color: #e08080; border-color: #e08080; }
 
@@ -97,9 +108,23 @@
   color: var(--violet-bright);
   border-color: var(--violet);
   background: var(--violet-subtle);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(155,143,200,0.08);
 }
 .db-btn-publish:hover     { background: color-mix(in srgb, var(--violet-subtle) 70%, var(--violet) 30%); }
 .db-btn-publish:disabled  { opacity: 0.5; cursor: not-allowed; }
+
+/* Bottoni import/export — tono più dimesso */
+.db-btn-io {
+  font-size: 15px;
+  color: var(--text-secondary);
+  background: rgba(30,38,34,0.6);
+  border-color: rgba(255,255,255,0.08);
+}
+.db-btn-io:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+  border-color: var(--accent-forest);
+}
 
 /* Publish tag editor */
 .db-pub-tag-section   { margin: 12px 0 4px; }
@@ -122,8 +147,8 @@
   padding: 4px 10px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 12px;
-  min-width: 110px;
+  font-size: 15px;
+  min-width: 130px;
   transition: border-color 0.15s, color 0.15s;
 }
 .db-sel-btn:hover { border-color: var(--accent-burgundy); color: var(--text-primary); }
@@ -203,7 +228,8 @@
 }
 
 .db-cnt {
-  font-weight: 400;
+  font-weight: 600;
+  font-size: 11px;
   color: var(--text-secondary);
   letter-spacing: 0;
 }
@@ -246,7 +272,7 @@
 }
 
 .db-dn {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-primary);
   font-weight: 500;
   flex: 1;
@@ -501,7 +527,7 @@ select.db-fi     { padding: 3px 5px; background: var(--bg-base); }
 }
 
 .db-ln {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-primary);
   min-width: 0;
   white-space: nowrap;
@@ -595,7 +621,7 @@ select.db-fi     { padding: 3px 5px; background: var(--bg-base); }
   overflow: hidden;
   border: 0.5px solid var(--accent-forest);
   background: #0E1210;
-  width: 275px;
+  width: 344px;
 }
 .db-tooltip img { display: block; width: 100%; height: auto; }
 

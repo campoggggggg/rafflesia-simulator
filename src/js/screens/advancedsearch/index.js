@@ -74,7 +74,7 @@ export function renderAdvancedSearchScreen() {
           <button class="as-color-btn db-cpill" data-color="blue"      style="--pc:#336699" title="Blue"></button>
           <button class="as-color-btn db-cpill" data-color="green"     style="--pc:#385400" title="Green"></button>
           <button class="as-color-btn db-cpill" data-color="red"       style="--pc:#8A0000" title="Red"></button>
-          <button class="as-color-btn db-cpill" data-color="black"     style="--pc:#595959" title="Black"></button>
+          <button class="as-color-btn db-cpill" data-color="black"     style="--pc:#262B2F" title="Black"></button>
           <button class="as-color-btn db-cpill" data-color="colorless" style="--pc:#A19993" title="Colorless"></button>
         </div>
       </div>

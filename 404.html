@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <script>
+    // GitHub Pages non supporta il routing lato client out-of-the-box.
+    // Questo file intercetta i 404 e redirige all'index.html mantenendo
+    // il path originale come query string, che index.html poi ripristina.
+    const l = window.location;
+    const base = l.pathname.split("/").slice(0, 2).join("/");
+    const path = l.pathname.slice(base.length) || "/";
+    const search = (path ? "?p=" + encodeURIComponent(path) : "") +
+                   (l.search ? (path ? "&" : "?") + l.search.slice(1) : "") +
+                   l.hash;
+    l.replace(base + "/" + search);
+  </script>
+</head>
+<body></body>
+</html>

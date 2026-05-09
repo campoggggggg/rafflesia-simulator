@@ -16,13 +16,15 @@ export function buildCardObject(row) {
   const color  = colors[0] ?? "colorless";
   const cost   = (row.cost_neutral ?? 0) + (row.cost_color ?? 0);
 
+  const subtypeName = row.subtypes?.[0]?.name ?? row.subtype ?? "";
+
   return {
     id:           String(row.id),
     name:         row.name,
     color,
     colors,
     type:         row.type_line,
-    subtype:      row.subtype    ?? "",
+    subtype:      subtypeName,
     rarity:       row.rarity,
     cost,
     cost_neutral: row.cost_neutral ?? 0,
@@ -40,7 +42,7 @@ export async function syncCardsFromSupabase() {
   try {
     const { data, error } = await db
       .from("cards")
-      .select("*, card_to_colors(colors(name)), card_to_keywords(keywords(name))")
+      .select("*, card_to_colors(colors(name)), card_to_keywords(keywords(name)), subtypes(name)")
       .order("id");
 
     if (error) throw error;

@@ -95,7 +95,7 @@ export function joinRoom(roomKey, onReady, onStatus) {
  */
 export function sendDeck(deckData) {
   _myDeck = deckData;
-  send({ type: "deck", payload: deckData });
+  send({ type: "deck", payload: { ...deckData, username: GameState.username } });
 }
 
 /** Broadcast an action so the peer mirrors it. */
@@ -169,20 +169,20 @@ function _handle(msg) {
     }
 
     case "welcome": {
-      // Joiner receives role and optional host deck
       GameState.myRole = msg.payload.role;
       applyStateSnapshot(msg.payload.snapshot);
-      // If host already sent their deck inside welcome, buffer it
       if (msg.payload.hostDeck) {
         _peerDeck = msg.payload.hostDeck;
+        if (_peerDeck.username) GameState.oppUsername = _peerDeck.username;
         _tryStartGame();
       }
       break;
     }
 
     case "deck": {
-      // Peer sent their deck (either as standalone or as fallback after welcome)
       _peerDeck = msg.payload;
+      // Salva lo username dell'avversario se incluso
+      if (msg.payload.username) GameState.oppUsername = msg.payload.username;
       _tryStartGame();
       break;
     }

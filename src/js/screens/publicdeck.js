@@ -15,7 +15,7 @@ const COLOR_HEX = {
   blue:      '#336699',
   green:     '#385400',
   red:       '#8A0000',
-  black:     '#595959',
+  black:     '#262B2F',
   colorless: '#A19993',
 };
 
@@ -409,7 +409,7 @@ async function exportDeckImage(deck) {
   ctx.textAlign = 'center';
   ctx.fillText(deck.name, CANVAS_W / 2, 52);
 
-  const COLOR_HEX_LOCAL = { blue:'#336699', green:'#385400', red:'#8A0000', black:'#595959', colorless:'#A19993' };
+  const COLOR_HEX_LOCAL = { blue:'#336699', green:'#385400', red:'#8A0000', black:'#262B2F', colorless:'#A19993' };
 
   const drawCard = (id, card, x, y, W, H, count) => {
     if (imgMap[id]) {

@@ -187,6 +187,9 @@ export const FilterManager = {
         db.from("subtypes").select("name").order("name"),
         db.from("card_sets").select("id, name").order("name"),
       ]);
+      if (kwRes.error)  console.warn("loadLookups keywords error:", kwRes.error);
+      if (stRes.error)  console.warn("loadLookups subtypes error:", stRes.error);
+      if (setRes.error) console.warn("loadLookups card_sets error:", setRes.error);
       this.allKeywords = (kwRes.data  || []).map(r => r.name);
       this.allSubtypes = (stRes.data  || []).map(r => r.name);
       this.allSets     =  setRes.data || [];

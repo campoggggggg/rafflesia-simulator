@@ -1,3 +1,10 @@
+/* ── Padding schermate standard (senza hero fullscreen) ────── */
+#screen-settings,
+#screen-auth,
+#screen-publicdeck {
+  padding: calc(58px + 32px) 36px 32px;
+}
+
 /* ── Card Panel ───────────────────────────────────────────── */
 .card-panel {
   background: var(--bg-surface);

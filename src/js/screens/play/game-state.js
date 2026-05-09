@@ -29,6 +29,8 @@ export function makeCard(cardDbId, owner, zone, faceUp = false) {
     zone,
     faceUp,
     rotation:   0,   // 0 | 90
+    damage:     0,   // danni accumulati (solo minion nel field)
+    counters:   0,   // counter "fish" sulla carta
   };
 }
 
@@ -76,6 +78,8 @@ export const GameState = {
   // Set by networking on connect
   myRole:       null,   // "p1" | "p2"
   roomKey:      null,
+  username:     null,   // nome del giocatore locale (impostato prima di entrare)
+  oppUsername:  null,   // nome dell'avversario (ricevuto al welcome/deck)
 
   phase:        "prep",   // "prep"|"start"|"play"|"end"
   activeRole:   "p1",     // whose turn it is
@@ -129,9 +133,17 @@ export function addToZone(player, zone, card) {
   player[zone].push(card);
 }
 
+// Restituisce il nome visualizzato per un role
+export function displayName(role) {
+  if (!role) return "?";
+  if (role === GameState.myRole)  return GameState.username  || role.toUpperCase();
+  return GameState.oppUsername || role.toUpperCase();
+}
+
 export function log(msg) {
-  GameState.log.unshift(`[${new Date().toLocaleTimeString("en", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}] ${msg}`);
-  if (GameState.log.length > 40) GameState.log.length = 40;
+  const t = new Date().toLocaleTimeString("en", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  GameState.log.unshift(`[LOG|${t}] ${msg}`);
+  if (GameState.log.length > 60) GameState.log.length = 60;
 }
 
 // ── Game setup ────────────────────────────────────────────────
@@ -167,24 +179,24 @@ export function setupPlayer(role, commanderId, deckIds, terrIds) {
 
 export function drawCard(role, doLog = true) {
   const p = getPlayer(role);
-  if (!p.deck.length) { if (doLog) log(`${role}: deck empty!`); return null; }
-  if (p.hand.length >= 12) { if (doLog) log(`${role}: hand full (max 12).`); return null; }
+  if (!p.deck.length) { if (doLog) log(`${displayName(role)}: deck empty!`); return null; }
+  if (p.hand.length >= 12) { if (doLog) log(`${displayName(role)}: hand full (max 12).`); return null; }
   const card = p.deck.shift();
   card.zone  = "hand";
   card.faceUp = true;
   p.hand.push(card);
-  if (doLog) log(`${role} draws a card.`);
+  if (doLog) log(`${displayName(role)} draws a card.`);
   return card;
 }
 
 export function playTerritoryCard(role) {
   const p = getPlayer(role);
-  if (!p.territoryDeck.length) { log(`${role}: territory deck empty!`); return null; }
+  if (!p.territoryDeck.length) { log(`${displayName(role)}: territory deck empty!`); return null; }
   const card = p.territoryDeck.shift();
   card.zone   = "territoryZone";
   card.faceUp = true;
   p.territoryZone.push(card);
-  log(`${role} plays a territory card.`);
+  log(`${displayName(role)} plays a territory card.`);
   return card;
 }
 
@@ -204,9 +216,16 @@ export function moveCard(instanceId, targetRole, targetZone, faceUp = null) {
   card.zone   = targetZone;
   card.owner  = targetRole;
   if (faceUp !== null) card.faceUp = faceUp;
+
+  // Azzera damage e counters quando la carta lascia il campo
+  if (srcZone === "primaryZone" && targetZone !== "primaryZone") {
+    card.damage   = 0;
+    card.counters = 0;
+  }
+
   addToZone(tgtPlayer, targetZone, card);
 
-  log(`${card.name} moved to ${targetRole}:${targetZone}.`);
+  log(`${displayName(targetRole)}: ${card.name} moved to ${targetZone}.`);
   return card;
 }
 
@@ -226,19 +245,19 @@ export function setPhase(phase) {
 export function toggleTurn() {
   GameState.activeRole = GameState.activeRole === "p1" ? "p2" : "p1";
   GameState.phase      = "prep";
-  log(`Turn passed to ${GameState.activeRole.toUpperCase()}.`);
+  log(`Turn passed to ${displayName(GameState.activeRole)}.`);
 }
 
 export function changeLife(role, delta) {
   const p = getPlayer(role);
   p.life = Math.max(0, p.life + delta);
-  log(`${role} life → ${p.life}`);
+  log(`${displayName(role)} life → ${p.life}`);
 }
 
 export function setLife(role, value) {
   const p     = getPlayer(role);
   p.life      = Math.max(0, Number(value) || 0);
-  log(`${role} life set to ${p.life}`);
+  log(`${displayName(role)} life set to ${p.life}`);
 }
 
 // ── Full state snapshot (for initial sync) ────────────────────

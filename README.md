@@ -30,7 +30,7 @@ Built with vanilla JS (ES modules), Supabase, and Chart.js — no framework, no 
 | Blue | `#336699` |
 | Red | `#8A0000` |
 | Green | `#385400` |
-| Black | `#595959` |
+| Black | `#262B2F` |
 | Colorless | `#A19993` |
 
 ## Deck format

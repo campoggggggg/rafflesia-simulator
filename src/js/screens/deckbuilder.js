@@ -13,7 +13,7 @@ let orderBy  = 'name-asc';
 let filters  = {
   name: '', text: '', type: '', subtype: '',
   colors: [], rarities: [],
-  neutralMin: '', neutralMax: '', colorMin: '', colorMax: '',
+  costMin: '', costMax: '',
 };
 
 const MAX_MAIN      = 29;
@@ -24,7 +24,7 @@ const COLOR_HEX     = {
   blue:      '#336699',
   green:     '#385400',
   red:       '#8A0000',
-  black:     '#595959',
+  black:     '#262B2F',
   colorless: '#A19993',
 };
 const HOVER_HEX     = {
@@ -94,48 +94,29 @@ function buildSkeleton(deck) {
 
   <!-- TOP BAR -->
   <div class="db-topbar">
-    <div class="db-tb-brand">
-      <span class="db-brand-name">DECK BUILDER</span>
-      <img class="db-brand-logo" src="src/assets/rafflesia-logo.png" alt="">
-      <div class="db-diamond-counter" id="db-diamond-counter" title="">
-        <svg class="db-diamond-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <!-- quadranti: top=commander, right=main, bottom=territory, left=side -->
-          <polygon class="db-dq db-dq-top"    points="50,2 98,50 50,50"  id="db-dq-cmd"/>
-          <polygon class="db-dq db-dq-right"  points="98,50 50,98 50,50" id="db-dq-main"/>
-          <polygon class="db-dq db-dq-bottom" points="50,98 2,50 50,50"  id="db-dq-terr"/>
-          <polygon class="db-dq db-dq-left"   points="2,50 50,2 50,50"   id="db-dq-side"/>
-          <!-- linee divisorie -->
-          <line x1="50" y1="2"  x2="50" y2="98" stroke="var(--db-diamond-border)" stroke-width="1.2"/>
-          <line x1="2"  y1="50" x2="98" y2="50" stroke="var(--db-diamond-border)" stroke-width="1.2"/>
-          <!-- bordo esterno -->
-          <polygon points="50,2 98,50 50,98 2,50" fill="none" stroke="var(--db-diamond-border)" stroke-width="1.5"/>
-        </svg>
-        <div class="db-diamond-labels">
-          <span class="db-dl-top"    id="db-dl-cmd">P</span>
-          <span class="db-dl-right"  id="db-dl-main">0/29</span>
-          <span class="db-dl-bottom" id="db-dl-terr">0/12</span>
-          <span class="db-dl-left"   id="db-dl-side">0/10</span>
-        </div>
-      </div>
-    </div>
+    <div class="db-tb-brand"></div>
 
     <div class="db-tb-actions">
-      <button class="db-btn" id="db-save">save</button>
-      <button class="db-btn" id="db-rename">rename</button>
+      <div class="db-tb-group db-tb-group-left">
+        <button class="db-btn db-btn-io" id="db-import">↓ import</button>
+        <button class="db-btn db-btn-io" id="db-export-code">↑ export code</button>
+        <button class="db-btn db-btn-io" id="db-export-img">↑ export img</button>
+      </div>
       <div class="db-tb-sep"></div>
-      <button class="db-btn" id="db-import">import</button>
-      <button class="db-btn" id="db-export-code">export code</button>
-      <button class="db-btn" id="db-export-img">export img</button>
-      <div class="db-tb-sep"></div>
-      <button class="db-btn db-btn-publish" id="db-publish">⬆ publish</button>
-      <button class="db-btn" id="db-new">+ new</button>
-      <button class="db-btn db-btn-danger" id="db-delete">− delete</button>
-      <div class="db-sel-wrap" id="db-sel-wrap">
-        <button class="db-sel-btn" id="db-sel-btn">
-          <span id="db-sel-label">${esc(deck.name)}</span>
-          <span class="db-sel-arrow">▼</span>
-        </button>
-        <div class="db-sel-drop hidden" id="db-sel-drop"></div>
+      <div class="db-tb-group db-tb-group-right">
+        <button class="db-btn" id="db-save">save</button>
+        <button class="db-btn" id="db-rename">rename</button>
+        <div class="db-tb-sep"></div>
+        <button class="db-btn db-btn-publish" id="db-publish">⬆ publish</button>
+        <button class="db-btn" id="db-new">+ new</button>
+        <button class="db-btn db-btn-danger" id="db-delete">− delete</button>
+        <div class="db-sel-wrap" id="db-sel-wrap">
+          <button class="db-sel-btn" id="db-sel-btn">
+            <span id="db-sel-label">${esc(deck.name)}</span>
+            <span class="db-sel-arrow">▼</span>
+          </button>
+          <div class="db-sel-drop hidden" id="db-sel-drop"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -185,24 +166,16 @@ function buildSkeleton(deck) {
             </div>
           </div>
           <div class="db-fg">
-            <label class="db-fl">⬜ cost</label>
-            <div class="db-range">
-              <input class="db-fi db-mini" id="df-nm" type="number" min="0" placeholder="min">
-              <span class="db-range-sep">–</span>
-              <input class="db-fi db-mini" id="df-nx" type="number" min="0" placeholder="max">
-            </div>
-          </div>
-        </div>
-
-        <div class="db-f-row">
-          <div class="db-fg">
-            <label class="db-fl">🔵 cost</label>
+            <label class="db-fl">Total cost</label>
             <div class="db-range">
               <input class="db-fi db-mini" id="df-cm" type="number" min="0" placeholder="min">
               <span class="db-range-sep">–</span>
               <input class="db-fi db-mini" id="df-cx" type="number" min="0" placeholder="max">
             </div>
           </div>
+        </div>
+
+        <div class="db-f-row">
           <div class="db-fg">
             <label class="db-fl">Aggiunta a</label>
             <div class="db-mode" id="db-mode">
@@ -290,10 +263,8 @@ function restoreFilters() {
   document.getElementById('df-text').value    = filters.text;
   document.getElementById('df-type').value    = filters.type;
   document.getElementById('df-subtype').value = filters.subtype;
-  document.getElementById('df-nm').value      = filters.neutralMin;
-  document.getElementById('df-nx').value      = filters.neutralMax;
-  document.getElementById('df-cm').value      = filters.colorMin;
-  document.getElementById('df-cx').value      = filters.colorMax;
+  document.getElementById('df-cm').value      = filters.costMin;
+  document.getElementById('df-cx').value      = filters.costMax;
   document.getElementById('db-ob').value      = orderBy;
 
   document.querySelectorAll('#db-cpills .db-cpill').forEach(b =>
@@ -334,10 +305,9 @@ function wireEvents() {
   document.getElementById('df-subtype').addEventListener('change', e => { filters.subtype = e.target.value; renderCardList(); });
   document.getElementById('df-type').addEventListener('change', e => { filters.type = e.target.value; renderCardList(); });
 
-  // Range costi
-  [['df-nm','neutralMin'],['df-nx','neutralMax'],['df-cm','colorMin'],['df-cx','colorMax']].forEach(([id, key]) =>
-    document.getElementById(id).addEventListener('input', e => { filters[key] = e.target.value; renderCardList(); })
-  );
+  // Range costo totale
+  document.getElementById('df-cm').addEventListener('input', e => { filters.costMin = e.target.value; renderCardList(); });
+  document.getElementById('df-cx').addEventListener('input', e => { filters.costMax = e.target.value; renderCardList(); });
 
   // Color pills
   document.querySelectorAll('#db-cpills .db-cpill').forEach(b =>
@@ -381,11 +351,16 @@ function wireEvents() {
     document.getElementById('screen-deckbuilder').addEventListener('mousemove', e => {
       const tt = document.getElementById('db-tooltip');
       if (!tt || tt.classList.contains('hidden')) return;
+      const rect = tt.getBoundingClientRect();
+      const w = rect.width  || 344;
+      const h = rect.height || 480;
+      const margin = 8;
       let x = e.clientX + 18;
-      let y = e.clientY - 100;
-      if (x + 269 > window.innerWidth)  x = e.clientX - 278;
-      if (y + 380 > window.innerHeight) y = window.innerHeight - 445;
-      if (y < 0) y = 0;
+      let y = e.clientY - Math.round(h / 2);
+      if (x + w + margin > window.innerWidth)  x = e.clientX - w - 10;
+      if (x < margin) x = margin;
+      if (y + h + margin > window.innerHeight) y = window.innerHeight - h - margin;
+      if (y < margin) y = margin;
       tt.style.left = x + 'px';
       tt.style.top  = y + 'px';
     });
@@ -433,24 +408,6 @@ function renderDeckPanel() {
   const sideN = deck.sideboardCards.length;
   const hasCmd = !!deck.commanderId;
 
-  const dlCmd  = document.getElementById('db-dl-cmd');
-  const dlMain = document.getElementById('db-dl-main');
-  const dlTerr = document.getElementById('db-dl-terr');
-  const dlSide = document.getElementById('db-dl-side');
-  const dqCmd  = document.getElementById('db-dq-cmd');
-  const dqMain = document.getElementById('db-dq-main');
-  const dqTerr = document.getElementById('db-dq-terr');
-  const dqSide = document.getElementById('db-dq-side');
-  const diamond = document.getElementById('db-diamond-counter');
-
-  if (dlMain)  dlMain.textContent  = `${mainN}/${MAX_MAIN}`;
-  if (dlTerr)  dlTerr.textContent  = `${terrN}/${MAX_TERRITORY}`;
-  if (dlSide)  dlSide.textContent  = `${sideN}/${MAX_SIDE}`;
-  if (dqCmd)   dqCmd.classList.toggle('db-dq-active', hasCmd);
-  if (dqMain)  dqMain.classList.toggle('db-dq-full', mainN >= MAX_MAIN);
-  if (dqTerr)  dqTerr.classList.toggle('db-dq-full', terrN >= MAX_TERRITORY);
-  if (dqSide)  dqSide.classList.toggle('db-dq-full', sideN >= MAX_SIDE);
-  if (diamond) diamond.title = `Commander: ${hasCmd ? 'sì' : 'no'} · Main: ${mainN}/${MAX_MAIN} · Territory: ${terrN}/${MAX_TERRITORY} · Side: ${sideN}/${MAX_SIDE}`;
 
   // Raggruppa carte main per tipo
   const groups = { Quest: {}, Spell: {}, Minion: {} };
@@ -479,8 +436,8 @@ function renderDeckPanel() {
     <div class="db-deck-cols" ${cmdBg}>
       <div class="db-dc">
         ${mkSection('COMMANDER', commanderRow(deck))}
-        ${mkSection('QUEST', cardGroup(groups.Quest || {}, 'main'))}
-        ${mkSection('SPELL', cardGroup(groups.Spell || {}, 'main'))}
+        ${mkSection(`QUEST <span class="db-cnt">${deck.cards.filter(id => { const c=CardDatabase.find(x=>x.id===id); return c&&c.type==='Quest'; }).length}</span>`, cardGroup(groups.Quest || {}, 'main'))}
+        ${mkSection(`SPELL <span class="db-cnt">${deck.cards.filter(id => { const c=CardDatabase.find(x=>x.id===id); return c&&c.type==='Spell'; }).length}</span>`, cardGroup(groups.Spell || {}, 'main'))}
         ${mkSection(`TERRITORY <span class="db-cnt">${deck.territoryCards.length}/${MAX_TERRITORY}</span>${mkAutofillBtn(!!deck.commanderId)}`, cardGroup(territory, 'territory'))}
         ${mkSection('MANA CURVE', renderManaCurve(deck), 'db-section-chart')}
       </div>
@@ -661,10 +618,9 @@ function getFiltered() {
     if (f.subtype    && c.subtype !== f.subtype)                                              return false;
     if (f.colors.length  && !f.colors.includes(c.color))                                     return false;
     if (f.rarities.length && !f.rarities.includes(c.rarity))                                return false;
-    if (f.neutralMin !== '' && (c.cost_neutral ?? 0) < +f.neutralMin)                       return false;
-    if (f.neutralMax !== '' && (c.cost_neutral ?? 0) > +f.neutralMax)                       return false;
-    if (f.colorMin   !== '' && (c.cost_color   ?? 0) < +f.colorMin)                         return false;
-    if (f.colorMax   !== '' && (c.cost_color   ?? 0) > +f.colorMax)                         return false;
+    const totalCost = (c.cost_neutral ?? 0) + (c.cost_color ?? 0);
+    if (f.costMin !== '' && totalCost < +f.costMin)                                          return false;
+    if (f.costMax !== '' && totalCost > +f.costMax)                                          return false;
     return true;
   });
 }
@@ -749,18 +705,18 @@ function addCard(card) {
     showToast(`"${card.name}" non è nel colore del commander.`); return;
   }
 
-  // 5. MAIN o SIDE
+  // 5. MAIN o SIDE — il limite di copie è condiviso tra i due
+  const copieMain = deck.cards.filter(id => id === card.id).length;
+  const copieSide = deck.sideboardCards.filter(id => id === card.id).length;
+  const copieTotal = copieMain + copieSide;
+  if (copieTotal >= getMaxCopies(card)) {
+    showToast(`Max ${getMaxCopies(card)} cop. di "${card.name}" tra main e side.`); return;
+  }
   if (addMode === 'main') {
     if (deck.cards.length >= MAX_MAIN) { showToast(`Main deck pieno (${MAX_MAIN}/29).`); return; }
-    if (deck.cards.filter(id => id === card.id).length >= getMaxCopies(card)) {
-      showToast(`Max ${getMaxCopies(card)} cop. di "${card.name}".`); return;
-    }
     deck.cards.push(card.id);
   } else {
     if (deck.sideboardCards.length >= MAX_SIDE) { showToast(`Sideboard pieno (${MAX_SIDE}/10).`); return; }
-    if (deck.sideboardCards.filter(id => id === card.id).length >= getMaxCopies(card)) {
-      showToast(`Max ${getMaxCopies(card)} cop. di "${card.name}".`); return;
-    }
     deck.sideboardCards.push(card.id);
   }
 
@@ -807,12 +763,21 @@ function populateDropdown() {
   populateSubtypeDropdown();
 }
 
-export function populateSubtypeDropdown() {
+export async function populateSubtypeDropdown() {
   const subtypeSel = document.getElementById('df-subtype');
-  if (!subtypeSel || !CardDatabase.length) return;
-  const subtypes = [...new Set(CardDatabase.map(c => c.subtype).filter(Boolean))].sort();
-  subtypeSel.innerHTML = `<option value="">Tutti</option>` +
-    subtypes.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  if (!subtypeSel) return;
+  try {
+    const { data, error } = await db.from('subtypes').select('name').order('name');
+    if (error) throw error;
+    const subtypes = (data || []).map(r => r.name);
+    subtypeSel.innerHTML = `<option value="">Tutti</option>` +
+      subtypes.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  } catch {
+    // fallback: ricava subtypes dalle carte locali
+    const subtypes = [...new Set(CardDatabase.map(c => c.subtype).filter(Boolean))].sort();
+    subtypeSel.innerHTML = `<option value="">Tutti</option>` +
+      subtypes.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  }
   subtypeSel.value = filters.subtype;
 }
 

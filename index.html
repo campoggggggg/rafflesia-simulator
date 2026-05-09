@@ -23,30 +23,39 @@
   "></canvas>
 
   <div id="app-shell">
-    <button id="sidebarExpandBtn" title="Mostra sidebar">&#9654;</button>
 
-    <aside id="sidebar">
-      <div class="sidebar-topbar">
-        <button id="sidebarCollapseBtn" title="Nascondi sidebar">&#9664;</button>
-        <button class="nav-btn nav-btn-auth" id="authSidebarBtn" type="button">
-          Accedi
+    <header id="topbar">
+      <!-- LEFT: logo + navigazione -->
+      <div class="topbar-left">
+        <button class="topbar-logo-btn" data-screen="home">
+          <img src="src/assets/rafflesia-logo.png" alt="Rafflesia" class="topbar-logo-img">
+        </button>
+
+        <nav class="topbar-nav">
+          <div class="topbar-dropdown">
+            <button class="topbar-nav-btn" id="exploreToggle">Explore ▾</button>
+            <div class="topbar-dropdown-menu" id="exploreMenu">
+              <button class="topbar-dropdown-item" data-screen="publicdeck">Public Decks</button>
+              <button class="topbar-dropdown-item" data-screen="deckbuilder">Deck Builder</button>
+              <button class="topbar-dropdown-item" data-screen="advancedsearch">Advanced Search</button>
+            </div>
+          </div>
+          <button class="topbar-nav-btn" data-screen="play">Play</button>
+        </nav>
+      </div>
+
+      <!-- RIGHT: auth + icone -->
+      <div class="topbar-right">
+        <button class="topbar-text-btn" data-screen="auth" id="signInBtn">Sign In</button>
+        <button class="topbar-text-btn topbar-register-btn" data-screen="auth" id="registerBtn">Register</button>
+        <button class="topbar-icon-btn" id="darkModeBtn" title="Toggle dark/light mode">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>
+        </button>
+        <button class="topbar-icon-btn" data-screen="settings" title="Settings">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.92c.04-.34.07-.69.07-1.08s-.03-.74-.07-1.08l2.32-1.81c.21-.17.27-.46.13-.69l-2.2-3.81c-.13-.23-.42-.31-.65-.23l-2.73 1.1c-.57-.44-1.18-.8-1.85-1.08l-.41-2.9c-.04-.25-.26-.42-.52-.42H9.18c-.26 0-.48.17-.52.42L8.25 7.4c-.67.28-1.28.65-1.85 1.08l-2.73-1.1c-.23-.09-.52 0-.65.23l-2.2 3.81c-.14.23-.08.52.13.69l2.32 1.81c-.04.34-.07.69-.07 1.08s.03.74.07 1.08l-2.32 1.81c-.21.17-.27.46-.13.69l2.2 3.81c.13.23.42.31.65.23l2.73-1.1c.57.44 1.18.8 1.85 1.08l.41 2.9c.04.25.26.42.52.42h4.4c.26 0 .48-.17.52-.42l.41-2.9c.67-.28 1.28-.65 1.85-1.08l2.73 1.1c.23.09.52 0 .65-.23l2.2-3.81c.14-.23.08-.52-.13-.69l-2.32-1.81z"/></svg>
         </button>
       </div>
-      <div class="logo">
-        <img src="src/assets/rafflesia-logo.png" alt="Rafflesia Logo" class="logo-img">
-        <span class="db-brand-name">"Even the most beautiful bloom feeds on rot." <br>— Sadu, False Prophet</span>
-      </div>
-
-      <nav class="menu">
-        <button class="nav-btn active" data-screen="home">Home</button>
-        <button class="nav-btn" data-screen="publicdeck">Public decks</button>
-        <button class="nav-btn" data-screen="play">Play</button>
-        <button class="nav-btn" data-screen="deckbuilder">Deck builder</button>
-        <button class="nav-btn" data-screen="settings">Settings</button>
-        <button class="nav-btn" data-screen="advancedsearch">Advanced search</button>
-      </nav>
-
-    </aside>
+    </header>
 
     <main id="main-content">
       <section id="screen-home"           class="screen active"></section>
@@ -58,6 +67,17 @@
       <section id="screen-publicdeck"     class="screen"></section>
     </main>
   </div>
+
+  <!-- Ripristina URL reale dopo redirect da 404.html (GitHub Pages SPA routing) -->
+  <script>
+    (function() {
+      var p = new URLSearchParams(location.search).get("p");
+      if (p) {
+        var base = location.pathname.replace(/\/$/, "");
+        history.replaceState(null, "", base + decodeURIComponent(p));
+      }
+    })();
+  </script>
 
   <!-- Supabase SDK — caricato come script globale prima del modulo -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

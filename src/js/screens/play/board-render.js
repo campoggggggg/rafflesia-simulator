@@ -4,11 +4,13 @@
 // territory deck, card preview, context menus, log and chat.
 // ============================================================
 
-import { GameState, getPlayer, getOpponentRole } from './game-state.js';
+import { GameState, getPlayer, getOpponentRole, displayName } from './game-state.js';
 import { getContextActions, endDrag,
          setPhase, endTurn, adjustLife,
-         drawOne, playTerritory }                 from './card-actions.js';
-import { broadcastSnapshot, broadcastChat }       from './networking.js';
+         drawOne, playTerritory, addDamage,
+         addCounter }                              from './card-actions.js';
+import { broadcastSnapshot, broadcastChat }        from './networking.js';
+import { playSound, toggleMute, isMuted }          from './sound.js';
 
 // ── Context menu state ────────────────────────────────────────
 let _ctxMenu    = null;  // { instanceId, zone, x, y }
@@ -163,13 +165,53 @@ export function showDisconnectBanner() {
   root.prepend(ban);
 }
 
-export function appendChatMessage(msg) {
-  const entries = document.getElementById("simLogEntries");
-  if (!entries) return;
-  const div = document.createElement("div");
-  div.className = "sim-log-entry sim-chat-msg";
-  div.textContent = msg;
-  entries.prepend(div);
+// Chiamata dal peer quando riceve un messaggio chat — lo salva nel log e ri-renderizza
+export function appendChatMessage(rawMsg) {
+  import('./game-state.js').then(({ log: logFn }) => {
+    logFn(rawMsg);
+    renderBoard();
+  });
+}
+
+// ── Log formatting ────────────────────────────────────────────
+
+function _formatLogEntry(raw) {
+  const myName  = GameState.username    || (GameState.myRole ? GameState.myRole.toUpperCase() : "P1");
+  const oppName = GameState.oppUsername || (GameState.myRole ? getOpponentRole(GameState.myRole).toUpperCase() : "P2");
+  const p1Name  = GameState.myRole === "p1" ? myName : oppName;
+  const p2Name  = GameState.myRole === "p2" ? myName : oppName;
+
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  function colorize(text) {
+    // Sostituisce "p1"/"P1" e "p2"/"P2" con i nomi reali colorati
+    text = text.replace(/\bp1\b|\bP1\b/g, `<span class="log-p1">${p1Name}</span>`);
+    text = text.replace(/\bp2\b|\bP2\b/g, `<span class="log-p2">${p2Name}</span>`);
+    // Colora anche il nome diretto se già presente
+    if (p1Name && !/p1|P1/.test(p1Name))
+      text = text.replace(new RegExp(esc(p1Name), "g"), `<span class="log-p1">${p1Name}</span>`);
+    if (p2Name && p2Name !== p1Name && !/p2|P2/.test(p2Name))
+      text = text.replace(new RegExp(esc(p2Name), "g"), `<span class="log-p2">${p2Name}</span>`);
+    return text;
+  }
+
+  // Messaggi chat: "[CHAT] Nome: testo"
+  if (raw.includes("[CHAT]")) {
+    let text = raw.replace(/^\[LOG\|[^\]]+\]\s*/, "").replace("[CHAT] ", "");
+    const colonIdx = text.indexOf(": ");
+    if (colonIdx !== -1) {
+      const sender = text.slice(0, colonIdx);
+      const body   = text.slice(colonIdx + 2);
+      const isMe   = sender === myName;
+      const cls    = isMe ? "log-p1" : "log-p2";
+      return `<span class="${cls}">${sender}</span>: ${body}`;
+    }
+    return colorize(text);
+  }
+
+  // Messaggi log normali: "[LOG|timestamp] testo"
+  let text = raw.replace(/^\[LOG\|[^\]]+\]\s*/, "");
+  return `<span class="log-tag">[LOG]</span> ${colorize(text)}`;
 }
 
 // ── Top bar ───────────────────────────────────────────────────
@@ -191,6 +233,22 @@ function _renderTopBar() {
             ${p.charAt(0).toUpperCase() + p.slice(1)}
           </button>
         `).join("")}
+      </div>
+
+      <!-- Bottone mute suoni -->
+      <button class="sim-mute-btn" id="simMuteBtn" title="Toggle sound">${isMuted() ? "🔇" : "🔊"}</button>
+
+      <!-- Toolbar utility: dado, moneta, fish counter, token -->
+      <div class="sim-utility-bar">
+        <button class="sim-utility-btn" id="simRollDice" title="Roll d6">🎲 Dice</button>
+        <button class="sim-utility-btn" id="simFlipCoin" title="Flip coin">🪙 Coin</button>
+        <!-- Fish counter: draggabile verso carte per aggiungere counter -->
+        <div class="sim-fish-token" id="simFishToken"
+             draggable="true" title="Drag onto a card to add a counter. Drag counter off a card to remove.">
+            ⛃
+          <span class="sim-fish-label">Counter</span>
+        </div>
+        <button class="sim-utility-btn" id="simCreateToken" title="Create token">✦ Token</button>
       </div>
 
       <div class="sim-turn-indicator ${isMyTurn ? "sim-turn--mine" : "sim-turn--opp"}"
@@ -427,7 +485,7 @@ function _renderSidebar(myP, my, oppP, opp) {
     <div class="sim-log" id="simLog">
       <div class="sim-log-title">Log</div>
       <div class="sim-log-entries" id="simLogEntries">
-        ${GameState.log.map(l => `<div class="sim-log-entry">${l}</div>`).join("")}
+        ${GameState.log.map(l => `<div class="sim-log-entry">${_formatLogEntry(l)}</div>`).join("")}
       </div>
       <div class="sim-chat-input-row">
         <input class="sim-chat-input" id="simChatInput" type="text" placeholder="Chat…" maxlength="200">
@@ -516,18 +574,34 @@ function _renderCardEl(card, zone, role, forceShowFace = false) {
   const showFace = forceShowFace || card.faceUp || isOwn;
   const rotStyle = card.rotation ? `style="transform:rotate(${card.rotation}deg)"` : "";
   const typeClass = `sim-card--${card.type}`;
+  const showDamage = zone === "primaryZone" && card.type === "minion";
+  const dmg = card.damage || 0;
 
   return `
-    <div class="sim-card ${typeClass} ${!showFace ? "sim-card--back" : ""} ${card.rotation ? "sim-card--rotated" : ""}"
-         data-instance="${card.instanceId}"
-         data-zone="${zone}"
-         data-role="${role}"
-         draggable="${isOwn}"
-         title="${showFace ? card.name : "Face-down card"}"
-         ${rotStyle}>
-      ${showFace && card.image
-        ? `<img src="${card.image}" alt="${card.name}" class="sim-card-img" draggable="false">`
-        : `<div class="sim-card-back-inner"></div>`}
+    <div class="sim-card-wrap">
+      <div class="sim-card ${typeClass} ${!showFace ? "sim-card--back" : ""} ${card.rotation ? "sim-card--rotated" : ""}"
+           data-instance="${card.instanceId}"
+           data-zone="${zone}"
+           data-role="${role}"
+           draggable="${isOwn}"
+           title="${showFace ? card.name : "Face-down card"}"
+           ${rotStyle}>
+        ${showFace && card.image
+          ? `<img src="${card.image}" alt="${card.name}" class="sim-card-img" draggable="false">`
+          : `<div class="sim-card-back-inner"></div>`}
+        ${dmg > 0 ? `<div class="sim-damage-counter">${dmg}</div>` : ""}
+        ${(card.counters || 0) > 0 ? `
+          <div class="sim-fish-counter" data-instance="${card.instanceId}" data-zone="${zone}" data-role="${role}"
+               draggable="true" title="Drag off this card to remove a counter">
+            ⛃${card.counters > 1 ? `<span class="sim-fish-counter-num">${card.counters}</span>` : ""}
+          </div>` : ""}
+        ${showDamage && isOwn ? `
+          <div class="sim-damage-btns">
+            <button class="sim-dmg-btn sim-dmg-btn--minus" data-instance="${card.instanceId}" data-dmg="-1">−</button>
+            <button class="sim-dmg-btn sim-dmg-btn--plus"  data-instance="${card.instanceId}" data-dmg="1">+</button>
+          </div>
+        ` : ""}
+      </div>
     </div>
   `;
 }
@@ -551,6 +625,102 @@ function _attachEvents() {
 
   document.getElementById("simDrawBtn")?.addEventListener("click", () => {
     if (GameState.activeRole === my) drawOne(my);
+    // drawOne chiama playSound("card-draw") via synced — nessun duplicato
+  });
+
+  // Bottone mute suoni
+  document.getElementById("simMuteBtn")?.addEventListener("click", () => {
+    const muted = toggleMute();
+    const btn = document.getElementById("simMuteBtn");
+    if (btn) btn.textContent = muted ? "🔇" : "🔊";
+  });
+
+  // Utility bar: dado, moneta, token
+  document.getElementById("simRollDice")?.addEventListener("click", () => {
+    playSound("dice-roll");
+    const roll = Math.floor(Math.random() * 6) + 1;
+    import('./game-state.js').then(({ log: logFn, displayName: dn, GameState: GS }) => {
+      logFn(`${dn(GS.myRole)} rolled a d6: ${roll}.`);
+      import('./networking.js').then(({ broadcastSnapshot: bs }) => bs());
+      renderBoard();
+    });
+  });
+  document.getElementById("simFlipCoin")?.addEventListener("click", () => {
+    playSound("coin-flip");
+    const result = Math.random() < 0.5 ? "Heads" : "Tails";
+    import('./game-state.js').then(({ log: logFn, displayName: dn, GameState: GS }) => {
+      logFn(`${dn(GS.myRole)} flipped a coin: ${result}.`);
+      import('./networking.js').then(({ broadcastSnapshot: bs }) => bs());
+      renderBoard();
+    });
+  });
+  document.getElementById("simCreateToken")?.addEventListener("click", () => {
+    // placeholder — funzionalità token da implementare in futuro
+  });
+
+  // ── Fish counter drag ─────────────────────────────────────────
+  // La fish nella toolbar: dragstart setta tipo "fish-add"
+  const fishToken = document.getElementById("simFishToken");
+  if (fishToken) {
+    fishToken.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("text/plain", "fish-add");
+      e.dataTransfer.effectAllowed = "copy";
+    });
+  }
+
+  // I counter già sulla carta: dragstart setta tipo "fish-remove" + instanceId
+  document.querySelectorAll(".sim-fish-counter[draggable='true']").forEach(el => {
+    el.addEventListener("dragstart", e => {
+      e.stopPropagation();
+      e.dataTransfer.setData("text/plain", `fish-remove:${el.dataset.instance}`);
+      e.dataTransfer.effectAllowed = "move";
+    });
+  });
+
+  // Le carte nel field: drop zone per fish-add e fish-remove
+  document.querySelectorAll(".sim-card[data-zone='primaryZone']").forEach(cardEl => {
+    cardEl.addEventListener("dragover", e => {
+      if (["fish-add", "fish-remove"].some(k =>
+          e.dataTransfer.types.includes("text/plain") || true)) {
+        e.preventDefault();
+        cardEl.classList.add("sim-fish-drag-over");
+      }
+    });
+    cardEl.addEventListener("dragleave", () => {
+      cardEl.classList.remove("sim-fish-drag-over");
+    });
+    cardEl.addEventListener("drop", e => {
+      cardEl.classList.remove("sim-fish-drag-over");
+      const raw = e.dataTransfer.getData("text/plain");
+      if (raw === "fish-add") {
+        e.preventDefault();
+        e.stopPropagation();
+        const instanceId = cardEl.dataset.instance;
+        if (instanceId) { playSound("counter-add"); addCounter(instanceId, 1); }
+      }
+    });
+  });
+
+  // Drop su qualsiasi zona NON-carta rimuove counter (se si trascina una fish dalla carta)
+  document.getElementById("simRoot")?.addEventListener("drop", e => {
+    const raw = e.dataTransfer.getData("text/plain");
+    if (raw && raw.startsWith("fish-remove:")) {
+      e.preventDefault();
+      const instanceId = raw.split(":")[1];
+      if (instanceId) addCounter(instanceId, -1);
+    }
+  });
+  document.getElementById("simRoot")?.addEventListener("dragover", e => {
+    const types = e.dataTransfer.types;
+    if (types && types.includes && types.includes("text/plain")) e.preventDefault();
+  });
+
+  // Bottoni danno sui minion
+  document.querySelectorAll(".sim-dmg-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      addDamage(btn.dataset.instance, Number(btn.dataset.dmg));
+    });
   });
 
   // Widget vita nella handbar: + e - applicano il delta, input imposta il valore diretto
@@ -631,15 +801,19 @@ function _attachEvents() {
     }
   });
 
-  // Chat send
+  // Chat send — il messaggio va in GameState.log (sopravvive ai re-render) e viene trasmesso
   const chatInput = document.getElementById("simChatInput");
   const chatBtn   = document.getElementById("simChatSendBtn");
   const sendChat  = () => {
     const msg = chatInput?.value.trim();
     if (!msg) return;
-    const full = `[${my}] ${msg}`;
-    appendChatMessage(full);
-    broadcastChat(full);
+    const name = GameState.username || my.toUpperCase();
+    const entry = `[CHAT] ${name}: ${msg}`;
+    import('./game-state.js').then(({ log: logFn }) => {
+      logFn(entry);
+      broadcastChat(entry);
+      renderBoard();
+    });
     chatInput.value = "";
   };
   chatBtn?.addEventListener("click", sendChat);
