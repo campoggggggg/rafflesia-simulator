@@ -15,6 +15,7 @@ const SCREEN_TO_PATH = {
   publicdeck:      "/decks",
   settings:        "/settings",
   auth:            "/auth",
+  gamedesign:      "/gamedesign",
 };
 
 const PATH_TO_SCREEN = Object.fromEntries(

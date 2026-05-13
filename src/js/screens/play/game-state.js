@@ -4,7 +4,7 @@
 // can intercept and broadcast them to the peer.
 // ============================================================
 
-import { CardDatabase } from '../../data/cards.js';
+import { CardDatabase, CardMap } from '../../data/cards.js';
 
 // ── Card factory ──────────────────────────────────────────────
 let _nextInstanceId = 1;
@@ -18,7 +18,7 @@ function nextId() { return String(_nextInstanceId++); }
  * @param {boolean} faceUp
  */
 export function makeCard(cardDbId, owner, zone, faceUp = false) {
-  const db = CardDatabase.find(c => String(c.id) === String(cardDbId));
+  const db = CardMap.get(String(cardDbId));
   return {
     instanceId: nextId(),
     id:         String(cardDbId),
@@ -258,6 +258,24 @@ export function setLife(role, value) {
   const p     = getPlayer(role);
   p.life      = Math.max(0, Number(value) || 0);
   log(`${displayName(role)} life set to ${p.life}`);
+}
+
+// ── Reset game state between sessions ─────────────────────────
+// Call this when entering the play lobby so stale state from a
+// previous session does not bleed into a new game.
+export function resetGameState() {
+  _nextInstanceId = 1;
+  GameState.myRole      = null;
+  GameState.roomKey     = null;
+  GameState.oppUsername = null;
+  GameState.phase       = "prep";
+  GameState.activeRole  = "p1";
+  GameState.p1          = emptyPlayer("p1");
+  GameState.p2          = emptyPlayer("p2");
+  GameState.log         = [];
+  GameState.dragging    = null;
+  GameState.handShown   = false;
+  GameState.showOppHand = false;
 }
 
 // ── Full state snapshot (for initial sync) ────────────────────

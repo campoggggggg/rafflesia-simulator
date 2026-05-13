@@ -3,7 +3,7 @@
 // ============================================================
 
 import { db }           from '../core/supabase-client.js';
-import { CardDatabase } from '../data/cards.js';
+import { CardDatabase, CardMap } from '../data/cards.js';
 import { AppState }     from '../core/state.js';
 import { getUser }      from '../auth/auth.js';
 import { navigateTo }   from '../core/router.js';
@@ -98,7 +98,7 @@ function renderGrid(decks) {
 }
 
 function buildCard(d) {
-  const commander = CardDatabase.find(c => String(c.id) === String(d.commander_id));
+  const commander = CardMap.get(String(d.commander_id));
   const colorHex  = COLOR_HEX[d.commander_color] || COLOR_HEX.colorless;
   const imgSrc    = commander ? commander.image : '';
   const dateStr   = d.created_at ? timeAgo(new Date(d.created_at)) : '—';
@@ -146,7 +146,7 @@ async function onCardClick(deckId) {
 function openDeckModal(deck, user) {
   const isOwner = user && String(user.id) === String(deck.author_user_id);
 
-  const commander = CardDatabase.find(c => String(c.id) === String(deck.commander_id));
+  const commander = CardMap.get(String(deck.commander_id));
   const colorHex  = COLOR_HEX[deck.commander_color] || COLOR_HEX.colorless;
 
   const buildSection = (label, ids) => {
@@ -154,7 +154,7 @@ function openDeckModal(deck, user) {
     const counts = {};
     ids.forEach(id => { counts[id] = (counts[id] || 0) + 1; });
     const rows = Object.entries(counts).map(([id, qty]) => {
-      const card = CardDatabase.find(c => String(c.id) === String(id));
+      const card = CardMap.get(String(id));
       const name = card ? esc(card.name) : `#${id}`;
       const qtyStr = qty > 1 ? `<span class="pdm-qty">×${qty}</span>` : '';
       const colorDot = card ? `<span class="pdm-dot" style="background:${COLOR_HEX[card.color] || COLOR_HEX.colorless}"></span>` : '';
@@ -328,7 +328,7 @@ async function exportDeckImage(deck) {
     return m;
   };
 
-  const cmdCard  = deck.commanderId ? CardDatabase.find(c => c.id === deck.commanderId) : null;
+  const cmdCard  = deck.commanderId ? CardMap.get(deck.commanderId) : null;
   const CMD_W    = Math.round(CARD_W * 1.2);
   const CMD_H    = Math.round(CARD_H * 1.2);
   const CMD_AREA = CMD_W + GAP * 3;
@@ -347,7 +347,7 @@ async function exportDeckImage(deck) {
   const MAIN_COLS = Math.max(1, Math.floor((CANVAS_W - PAD * 2 + GAP) / (CARD_W + GAP)));
   const mainByType = { Quest: {}, Spell: {}, Minion: {} };
   (deck.cards || []).forEach(id => {
-    const card = CardDatabase.find(c => c.id === id);
+    const card = CardMap.get(id);
     const type = (card && mainByType[card.type]) ? card.type : 'Minion';
     mainByType[type][id] = (mainByType[type][id] || 0) + 1;
   });
@@ -372,7 +372,7 @@ async function exportDeckImage(deck) {
   ])];
   const imgMap = {};
   await Promise.all(allIds.map(id => {
-    const card = CardDatabase.find(c => c.id === id);
+    const card = CardMap.get(id);
     if (!card?.image) return Promise.resolve();
     return new Promise(resolve => {
       const img = new Image();
@@ -433,7 +433,7 @@ async function exportDeckImage(deck) {
     ctx.fillStyle = '#aaaaaa'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
     ctx.fillText(sec.label, PAD, y + 22);
     sec.ids.forEach((id, i) => {
-      drawCard(id, CardDatabase.find(c => c.id === id),
+      drawCard(id, CardMap.get(id),
         PAD + (i % MAIN_COLS) * (CARD_W + GAP),
         y + SEC_H + Math.floor(i / MAIN_COLS) * (CARD_H + GAP),
         CARD_W, CARD_H, sec.counts[id]);
@@ -453,7 +453,7 @@ async function exportDeckImage(deck) {
       ctx.fillText(`TERRITORY  ${(deck.territoryCards||[]).length}/12`, terrX, y + 22);
       terrIds.forEach((id, i) => {
         const col = i % TERR_COLS, row = Math.floor(i / TERR_COLS);
-        drawCard(id, CardDatabase.find(c => c.id === id), terrX + col*(CARD_W+GAP), y+SEC_H+row*(CARD_H+GAP), CARD_W, CARD_H, terrCounts[id]);
+        drawCard(id, CardMap.get(id), terrX + col*(CARD_W+GAP), y+SEC_H+row*(CARD_H+GAP), CARD_W, CARD_H, terrCounts[id]);
       });
     }
     y += topRowH + SEC_GAP;

@@ -9,7 +9,7 @@
 
 import { getCurrentDeck, AppState } from '../../core/state.js';
 import { updateBackButtons }        from '../../core/router.js';
-import { GameState, setupPlayer }  from './game-state.js';
+import { GameState, setupPlayer, resetGameState } from './game-state.js';
 import { renderBoard }             from './board-render.js';
 import {
   createRoom,
@@ -21,6 +21,9 @@ import {
 // ── Public entry ──────────────────────────────────────────────
 
 export function renderPlayScreen() {
+  destroyPeer();
+  resetGameState();
+
   const screen      = document.getElementById("screen-play");
   const currentDeck = getCurrentDeck();
   const issues      = validateDeck(currentDeck);

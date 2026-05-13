@@ -31,25 +31,17 @@ export async function signUp(email, password, username) {
   return data;
 }
 
+
 // Login con email oppure username.
 // Se l'input non contiene "@" lo trattiamo come username
-// e cerchiamo l'email corrispondente in profiles.
+// e cerchiamo l'email nella colonna `email` di profiles (salvata alla signup).
+// Se rememberMe = false, i token vengono spostati in sessionStorage dopo il login
+// così non sopravvivono alla chiusura del browser.
 export async function signIn(emailOrUsername, password, rememberMe = false) {
-  if (rememberMe) {
-    localStorage.setItem('rafflesia_remember_me', 'true');
-  } else {
-    localStorage.removeItem('rafflesia_remember_me');
-  }
-
   let email = emailOrUsername.trim();
 
   if (!email.includes("@")) {
-    // È uno username: cerca l'email associata
-    const { data, error } = await db
-      .from("profiles")
-      .select("id")
-      .ilike("username", email)
-      .maybeSingle();
+    const { data, error } = await db.rpc("get_email_by_username", { p_username: email });
 
     if (error) throw error;
 
@@ -57,26 +49,28 @@ export async function signIn(emailOrUsername, password, rememberMe = false) {
       throw new Error("No account found with that username.");
     }
 
-    // Recupera l'email dall'auth tramite una funzione RPC,
-    // oppure la leggiamo da user_metadata se la salviamo.
-    // Strategia più semplice: aggiungiamo email a profiles.
-    // Per ora usiamo una RPC che restituisce l'email dato l'id.
-    const { data: emailData, error: rpcErr } = await db
-      .rpc("get_email_by_id", { user_id: data.id });
-
-    if (rpcErr || !emailData) {
-      throw new Error("Could not resolve username to email. Try logging in with your email.");
-    }
-
-    email = emailData;
+    email = data;
   }
 
   const { data, error } = await db.auth.signInWithPassword({ email, password });
   if (error) throw error;
+
+  if (!rememberMe) {
+    // Sposta i token Supabase dal localStorage al sessionStorage.
+    // Il client continua a funzionare ma la sessione non sopravvive alla chiusura del browser.
+    const STORAGE_KEY = 'sb-rxsvogebmhmjlixxdoep-auth-token';
+    const token = localStorage.getItem(STORAGE_KEY);
+    if (token) {
+      sessionStorage.setItem(STORAGE_KEY, token);
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+
   return data;
 }
 
 // Crea il profilo al primo SIGNED_IN confermato, se non esiste già.
+// Salva anche l'email per consentire il login via username senza RPC privilegiata.
 export async function ensureProfile(user) {
   const username = user.user_metadata?.username;
   if (!username) return;
@@ -87,7 +81,11 @@ export async function ensureProfile(user) {
   if (selErr) { console.warn("ensureProfile select:", selErr.message); return; }
 
   if (!existing) {
-    const { error: insErr } = await db.from("profiles").insert({ id: user.id, username });
+    const { error: insErr } = await db.from("profiles").insert({
+      id: user.id,
+      username,
+      email: user.email,
+    });
     if (insErr) console.warn("ensureProfile insert:", insErr.message);
   }
 }

@@ -20,6 +20,7 @@ import { renderSettingsScreen } from '../screens/settings.js';
 import { renderAuthScreen } from '../auth/auth-screen.js';
 import { renderAdvancedSearchScreen } from '../screens/advancedsearch/index.js';
 import { renderPublicDeckScreen }     from '../screens/publicdeck.js';
+import { renderGameDesignScreen }    from '../screens/gamedesign.js';
 
 async function goToAuthScreen() {
   setNavigationHistory(["auth"]);
@@ -54,9 +55,23 @@ function initNavigation() {
         return;
       }
 
+      if (btn.dataset.screen === "gamedesign") {
+        navigateTo("gamedesign");
+        await renderGameDesignScreen();
+        return;
+      }
+
       navigateTo(btn.dataset.screen);
     });
   });
+}
+
+const ADMIN_USERNAMES = ['camposssssss', 'gyomber', 'skyness'];
+
+function updateGameDesignNavVisibility(username) {
+  const btn = document.getElementById('gameDesignBtn');
+  if (!btn) return;
+  btn.style.display = username && ADMIN_USERNAMES.includes(username) ? '' : 'none';
 }
 
 function initTopbar() {
@@ -86,6 +101,7 @@ async function initApp() {
   try { renderAuthScreen(); } catch (e) { console.error("renderAuthScreen:", e); }
   try { renderAdvancedSearchScreen(); } catch (e) { console.error("renderAdvancedSearchScreen:", e); }
   try { await renderPublicDeckScreen(); } catch (e) { console.error("renderPublicDeckScreen:", e); }
+  try { renderGameDesignScreen(); } catch (e) { console.error("renderGameDesignScreen:", e); }
 
   document.body.classList.toggle("theme-light", AppState.settings.theme === "light");
 
@@ -108,6 +124,8 @@ async function initApp() {
       await onLoginLoadDecks();
       await renderDeckBuilderScreen();
       renderPlayScreen();
+      await renderGameDesignScreen();
+      updateGameDesignNavVisibility(AppState.username);
       updateGlobalUI(user);
       if (event === "SIGNED_IN" && _initialAuthHandled) {
         showGlobalToast(`Welcome back to Rafflesia, ${AppState.username}.`, "success");
@@ -117,6 +135,7 @@ async function initApp() {
     } else if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !user)) {
       _initialAuthHandled = true;
       AppState.username = "";
+      updateGameDesignNavVisibility("");
       updateGlobalUI(null);
     }
   });

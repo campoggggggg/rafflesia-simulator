@@ -9,6 +9,7 @@
 import { db } from '../core/supabase-client.js';
 
 export let CardDatabase = [];
+export let CardMap = new Map();
 
 export function buildCardObject(row) {
   const colors = (row.card_to_colors ?? []).map(r => r.colors?.name).filter(Boolean);
@@ -47,6 +48,7 @@ export async function syncCardsFromSupabase() {
 
     if (error) throw error;
     CardDatabase = data.map(buildCardObject);
+    CardMap = new Map(CardDatabase.map(c => [c.id, c]));
   } catch (err) {
     console.warn("Impossibile caricare le carte da Supabase:", err.message);
   }
