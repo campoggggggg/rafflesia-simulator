@@ -11,6 +11,129 @@
   overflow: hidden;
 }
 
+/* ── Tab bar ─────────────────────────────────────────────────── */
+.gd-tabs-bar {
+  display: flex;
+  gap: 0;
+  padding: 0 24px;
+  padding-top: 58px; /* topbar height */
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.gd-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  padding: 12px 20px 10px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+
+.gd-tab:hover { color: var(--text-primary); }
+
+.gd-tab--active {
+  color: var(--text-heading);
+  border-bottom-color: var(--accent-burgundy);
+}
+
+/* ── Tab panels ──────────────────────────────────────────────── */
+.gd-tab-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.gd-tab-panel--hidden { display: none; }
+
+/* ── Lista colori (tab Colors, colonna sinistra) ─────────────── */
+.gd-color-list {
+  border-right: 1px solid var(--border);
+  background: var(--bg-surface);
+  width: 280px;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.gd-color-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 16px 16px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.13s;
+}
+
+.gd-color-item:hover { background: var(--bg-elevated); }
+
+.gd-color-item--active {
+  background: var(--bg-elevated);
+  box-shadow: inset 3px 0 0 var(--accent-burgundy);
+}
+
+.gd-color-item-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.10);
+}
+
+.gd-color-item-name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-heading);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.04em;
+}
+
+.gd-color-item-count {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 8px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* ── Color hero (colonna sinistra del dettaglio colore) ──────── */
+.gd-color-hero {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: 200px;
+}
+
+.gd-color-swatch {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.55), 0 0 0 3px rgba(255,255,255,0.07);
+}
+
+.gd-color-hero-label {
+  font-family: 'Cinzel', serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-heading);
+}
+
 /* ── Filtri ───────────────────────────────────────────────────── */
 .gd-filters {
   display: flex;
@@ -20,7 +143,7 @@
   border-bottom: 1px solid var(--border);
   background: var(--bg-surface);
   flex-shrink: 0;
-  padding-top: calc(14px + 58px); /* 58px = topbar height */
+  padding-top: 14px;
   flex-wrap: wrap;
 }
 
