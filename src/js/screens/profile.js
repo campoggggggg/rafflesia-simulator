@@ -625,21 +625,35 @@ async function saveProfile(user) {
   });
 
   // fav ids puliti (max 3, senza null)
-  const favIds = _favIds.filter(Boolean).map(Number);
+  const favIds = _favIds.filter(Boolean);
 
+  // Colonne legacy che esistono sicuramente nel DB
   const payload = {
     bio,
-    social_links:        socialLinks,
-    favorite_card_ids:   _favIds.filter(Boolean),
-    // mantieni retrocompatibilità con vecchio campo singolo
-    favorite_card_id:    favIds[0] || null,
-    social_label:        socialLinks[0]?.label || '',
-    social_url:          socialLinks[0]?.url   || '',
+    social_label: socialLinks[0]?.label || '',
+    social_url:   socialLinks[0]?.url   || '',
+    favorite_card_id: favIds[0] ? Number(favIds[0]) : null,
   };
 
-  const { error } = await db.from('profiles').update(payload).eq('id', user.id);
+  // Tenta di aggiungere le colonne nuove (potrebbero non esistere ancora)
+  // Se non esistono nel DB, Supabase restituirà un errore che gestiamo
+  const payloadFull = {
+    ...payload,
+    social_links:      socialLinks,
+    favorite_card_ids: favIds,
+  };
+
+  let { error } = await db.from('profiles').update(payloadFull).eq('id', user.id);
+
+  // Se fallisce per colonne mancanti, riprova con solo le colonne legacy
   if (error) {
-    showGlobalToast('Error saving profile.', 'error');
+    console.warn('saveProfile (full):', error.message);
+    const fallback = await db.from('profiles').update(payload).eq('id', user.id);
+    error = fallback.error;
+  }
+
+  if (error) {
+    showGlobalToast(`Error: ${error.message}`, 'error');
     console.warn('saveProfile:', error.message);
     return;
   }
