@@ -28,6 +28,8 @@ import {
   playTerritoryCard as _playTerritory,
   displayName,
   log,
+  getStateSnapshot,
+  applyStateSnapshot,
 } from './game-state.js';
 
 import { broadcastAction, registerAction } from './networking.js';
@@ -58,7 +60,12 @@ const ACTION_SOUNDS = {
   topDeck:             "card-play",
   bottomDeck:          "card-play",
   returnToHand:        "card-draw",
-  declareAttack:       "button",
+  declareAttack:              "button",
+  millTerritory:              "card-activate",
+  millMainDeck:               "card-activate",
+  sendHandToBottomDeckAndPlayTerritory: "card-play",
+  logAttackOnMinion:          "button",
+  logAttackOnOpponent:        "button",
   flipCardFaceUp:      "card-activate",
   sapCard:             "button",
   sapMinion:           "button",
@@ -75,6 +82,24 @@ const ACTION_SOUNDS = {
   setLifePoints:       "life-change",
 };
 
+// ── Undo stack ────────────────────────────────────────────────
+// Salva snapshot dello stato prima di ogni azione locale (max 20)
+const _undoStack = [];
+const UNDO_MAX = 20;
+
+function _pushUndo() {
+  _undoStack.push(getStateSnapshot());
+  if (_undoStack.length > UNDO_MAX) _undoStack.shift();
+}
+
+export function undoLastAction() {
+  if (!_undoStack.length) { log("Nothing to undo."); render(); return; }
+  const snap = _undoStack.pop();
+  applyStateSnapshot(snap);
+  log("Action undone.");
+  render();
+}
+
 /**
  * Wrap a pure-mutation function so it:
  *   - Registers itself for peer replay via registerAction.
@@ -84,6 +109,7 @@ function synced(name, localFn) {
   registerAction(name, (...args) => { localFn(...args); render(); });
 
   return (...args) => {
+    _pushUndo();
     localFn(...args);
     broadcastAction(name, args);
     closeMenu();
@@ -138,15 +164,18 @@ export const setCardSecondary = synced("setCardSecondary", (instanceId) => {
 });
 
 export const activateSpell = synced("activateSpell", (instanceId) => {
+  _shakeCard(instanceId);
   _moveCard(instanceId, ownerOf(instanceId), "graveyard", true);
   log("Spell activated and sent to graveyard.");
 });
 
 export const activateQuest = synced("activateQuest", (instanceId) => {
+  _shakeCard(instanceId);
   _moveCard(instanceId, ownerOf(instanceId), "tertiaryZone", true);
 });
 
 export const sendToGraveyard = synced("sendToGraveyard", (instanceId) => {
+  _shakeCard(instanceId);
   _moveCard(instanceId, ownerOf(instanceId), "graveyard", true);
 });
 
@@ -157,23 +186,41 @@ export const banishCard = synced("banishCard", (instanceId) => {
 export const topDeck = synced("topDeck", (instanceId) => {
   const found = findAny(instanceId);
   if (!found) return;
-  const { card, player, zone } = found;
-  removeFromAny(instanceId);
-  card.zone   = "deck";
-  card.faceUp = false;
-  player.deck.unshift(card);
-  log(`${card.name} put on top of deck.`);
+  const { card, player } = found;
+  // Se la carta è un territorio, va in cima al territory deck
+  if (card.type === "territory") {
+    removeFromAny(instanceId);
+    card.zone   = "territoryDeck";
+    card.faceUp = false;
+    player.territoryDeck.unshift(card);
+    log(`${card.name} put on top of territory deck.`);
+  } else {
+    removeFromAny(instanceId);
+    card.zone   = "deck";
+    card.faceUp = false;
+    player.deck.unshift(card);
+    log(`${card.name} put on top of deck.`);
+  }
 });
 
 export const bottomDeck = synced("bottomDeck", (instanceId) => {
   const found = findAny(instanceId);
   if (!found) return;
   const { card, player } = found;
-  removeFromAny(instanceId);
-  card.zone   = "deck";
-  card.faceUp = false;
-  player.deck.push(card);
-  log(`${card.name} put on bottom of deck.`);
+  // Se la carta è un territorio, va in fondo al territory deck
+  if (card.type === "territory") {
+    removeFromAny(instanceId);
+    card.zone   = "territoryDeck";
+    card.faceUp = false;
+    player.territoryDeck.push(card);
+    log(`${card.name} put on bottom of territory deck.`);
+  } else {
+    removeFromAny(instanceId);
+    card.zone   = "deck";
+    card.faceUp = false;
+    player.deck.push(card);
+    log(`${card.name} put on bottom of deck.`);
+  }
 });
 
 export const returnToHand = synced("returnToHand", (instanceId) => {
@@ -182,7 +229,10 @@ export const returnToHand = synced("returnToHand", (instanceId) => {
 
 export const declareAttack = synced("declareAttack", (instanceId) => {
   const found = findAny(instanceId);
-  if (found) log(`${found.card.name} declares an attack!`);
+  if (found) {
+    _shakeCard(instanceId);
+    log(`${found.card.name} declares an attack!`);
+  }
 });
 
 export const flipCardFaceUp = synced("flipCardFaceUp", (instanceId) => {
@@ -254,6 +304,28 @@ export const unsapAllTerritories = synced("unsapAllTerritories", (role) => {
   log(`${displayName(role)} unsapped all territories.`);
 });
 
+// Mill: manda la prima carta del main deck al graveyard
+export const millMainDeck = synced("millMainDeck", (role) => {
+  const p = GameState[role];
+  if (!p.deck.length) { log(`${displayName(role)}: main deck empty!`); return; }
+  const card = p.deck.shift();
+  card.zone   = "graveyard";
+  card.faceUp = true;
+  p.graveyard.push(card);
+  log(`${displayName(role)} milled ${card.name} from main deck.`);
+});
+
+// Mill: manda la prima carta del territory deck al graveyard
+export const millTerritory = synced("millTerritory", (role) => {
+  const p = GameState[role];
+  if (!p.territoryDeck.length) { log(`${displayName(role)}: territory deck empty!`); return; }
+  const card = p.territoryDeck.shift();
+  card.zone   = "graveyard";
+  card.faceUp = true;
+  p.graveyard.push(card);
+  log(`${displayName(role)} milled ${card.name} from territory deck.`);
+});
+
 // ── Draw ──────────────────────────────────────────────────────
 
 export const drawOne = synced("drawOne", (role) => {
@@ -280,6 +352,20 @@ export const setLifePoints = synced("setLifePoints", (role, value) => {
   _setLife(role, value);
 });
 
+// ── Shake visual feedback ─────────────────────────────────────
+
+function _shakeCard(instanceId) {
+  // Eseguito prima del re-render: cerca l'elemento DOM e aggiunge la classe shake
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`[data-instance="${instanceId}"]`);
+    if (!el) return;
+    el.classList.remove("sim-card--shake");
+    void el.offsetWidth; // force reflow
+    el.classList.add("sim-card--shake");
+    el.addEventListener("animationend", () => el.classList.remove("sim-card--shake"), { once: true });
+  });
+}
+
 // ── Drag & drop ───────────────────────────────────────────────
 
 const _moveCardRaw = synced("moveCardRaw", (instanceId, targetRole, targetZone, faceUp) => {
@@ -294,6 +380,72 @@ export function endDrag(instanceId, targetZone, targetRole) {
   GameState.dragging = null;
   const faceUp = targetZone !== "secondaryZone";
   _moveCardRaw(instanceId, targetRole, targetZone, faceUp);
+}
+
+// ── Drag mano → territory deck: carta va in fondo al main deck e si evoca una terra ──
+
+const _sendHandToBottomAndPlayTerritory = synced("sendHandToBottomDeckAndPlayTerritory", (instanceId, role) => {
+  const found = findAny(instanceId);
+  if (!found || found.zone !== "hand") return;
+  const { card, player } = found;
+  // Rimuovi dalla mano e metti in fondo al deck principale
+  removeFromAny(instanceId);
+  card.zone   = "deck";
+  card.faceUp = false;
+  player.deck.push(card);
+  log(`${displayName(role)}: ${card.name} placed on bottom of deck.`);
+  // Evoca automaticamente una terra dal territory deck
+  if (player.territoryDeck.length) {
+    const terrCard = player.territoryDeck.shift();
+    terrCard.zone   = "territoryZone";
+    terrCard.faceUp = true;
+    player.territoryZone.push(terrCard);
+    log(`${displayName(role)} played territory: ${terrCard.name}.`);
+  } else {
+    log(`${displayName(role)}: territory deck empty, no territory played.`);
+  }
+});
+
+export function sendHandToBottomDeckAndPlayTerritory(instanceId, role) {
+  _sendHandToBottomAndPlayTerritory(instanceId, role);
+}
+
+// ── Attack with arrow (no synced — solo log) ──────────────────
+
+export function startAttackMode(instanceId) {
+  const found = findAny(instanceId);
+  if (!found) return;
+  closeMenu();
+  if (typeof window._startAttackMode === "function") {
+    window._startAttackMode(instanceId, found.card.name);
+  }
+}
+
+export const logAttackOnMinion = synced("logAttackOnMinion", (attackerId, attackerName, targetId) => {
+  const target = findAny(targetId);
+  const tName = target?.card.name ?? "minion";
+  log(`${displayName(GameState.myRole)}: ${attackerName} attacks ${tName}!`);
+  _animateAttackCard(attackerId);
+  const attacker = findAny(attackerId);
+  if (attacker) attacker.card.rotation = 90;
+});
+
+export const logAttackOnOpponent = synced("logAttackOnOpponent", (attackerId, attackerName) => {
+  log(`${displayName(GameState.myRole)}: ${attackerName} attacked opponent HP!`);
+  _animateAttackCard(attackerId);
+  const attacker = findAny(attackerId);
+  if (attacker) attacker.card.rotation = 90;
+});
+
+function _animateAttackCard(instanceId) {
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`[data-instance="${instanceId}"][data-zone="primaryZone"]`);
+    if (!el) return;
+    el.classList.remove("sim-card--attack");
+    void el.offsetWidth;
+    el.classList.add("sim-card--attack");
+    el.addEventListener("animationend", () => el.classList.remove("sim-card--attack"), { once: true });
+  });
 }
 
 // ── Context menu definitions ──────────────────────────────────
@@ -332,6 +484,7 @@ export function getContextActions(card, fromZone) {
   }
 
   if (fromZone === "primaryZone") return [
+    { label: "Attack",       action: () => startAttackMode(id) },
     { label: "Sap",          action: () => sapMinion(id) },
     { label: "Unsap",        action: () => unsapMinion(id) },
     { label: "To grave",     action: () => sendToGraveyard(id) },

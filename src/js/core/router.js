@@ -6,6 +6,11 @@
 // del browser funziona tramite popstate.
 // ============================================================
 
+// Base path letto dal meta tag <meta name="app-base-path" content="...">.
+// In locale: content="" → stringa vuota → URL normali (/play, /builder …).
+// Su GitHub Pages: content="/rafflesia-simulator" → URL con prefisso.
+const _basePath = document.querySelector('meta[name="app-base-path"]')?.content ?? "";
+
 // Mappa schermata → path URL e viceversa
 const SCREEN_TO_PATH = {
   home:            "/",
@@ -16,6 +21,8 @@ const SCREEN_TO_PATH = {
   settings:        "/settings",
   auth:            "/auth",
   gamedesign:      "/gamedesign",
+  profile:         "/profile",
+  match:           "/match",
 };
 
 const PATH_TO_SCREEN = Object.fromEntries(
@@ -23,8 +30,8 @@ const PATH_TO_SCREEN = Object.fromEntries(
 );
 
 export function screenFromPath(path) {
-  // Rimuove eventuale base path (es. /rafflesia-simulator) e cerca la schermata
-  const stripped = path.replace(/^\/[^/]+(?=\/)/, "") || "/";
+  // Rimuove il base path e cerca la schermata corrispondente
+  const stripped = _basePath ? path.replace(_basePath, "") || "/" : path;
   return PATH_TO_SCREEN[stripped] || PATH_TO_SCREEN[path] || "home";
 }
 
@@ -51,7 +58,7 @@ export function navigateTo(screenName, addToHistory = true) {
 
   if (addToHistory && currentScreen !== screenName) {
     navigationHistory.push(screenName);
-    const path = SCREEN_TO_PATH[screenName] ?? "/";
+    const path = _basePath + (SCREEN_TO_PATH[screenName] ?? "/");
     history.pushState({ screen: screenName }, "", path);
   }
 
@@ -78,6 +85,16 @@ export function updateBackButtons() {
 export function getNavigationHistory() { return navigationHistory; }
 export function setNavigationHistory(h) { navigationHistory = h; }
 export function getCurrentScreen()      { return currentScreen; }
+export function getBasePath()           { return _basePath; }
+
+// Converte un path relativo in assoluto usando il base path.
+// assetPath("src/assets/cards/001.png") →
+//   in locale (basePath=""):                 "/src/assets/cards/001.png"  → no, rimane "src/assets/..."
+//   su GitHub Pages (basePath="/raf..."):    "/rafflesia-simulator/src/assets/cards/001.png"
+// Usare sempre questa funzione per gli asset nei template JS.
+export function assetPath(relativePath) {
+  return _basePath + "/" + relativePath;
+}
 
 // Ascolta il tasto Indietro/Avanti del browser
 window.addEventListener("popstate", (e) => {

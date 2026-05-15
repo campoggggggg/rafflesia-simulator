@@ -7,6 +7,7 @@
 // ============================================================
 
 import { db } from '../core/supabase-client.js';
+import { assetPath } from '../core/router.js';
 
 export let CardDatabase = [];
 export let CardMap = new Map();
@@ -35,7 +36,7 @@ export function buildCardObject(row) {
     text:         row.card_text ?? "",
     keywords,
     setNum:       row.set_num ?? "",
-    image:        `src/assets/cards/${String(row.id).padStart(3, '0')}.png`
+    image:        assetPath(`src/assets/cards/${String(row.id).padStart(3, '0')}.png`)
   };
 }
 

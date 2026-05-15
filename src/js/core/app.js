@@ -5,10 +5,10 @@
 // caricato da index.html come <script type="module">.
 // ============================================================
 
-import { navigateTo, setNavigationHistory, screenFromPath } from './router.js';
+import { navigateTo, setNavigationHistory, screenFromPath, getBasePath } from './router.js';
 import { showGlobalToast, updateGlobalUI } from './ui.js';
 import { signOut, onAuthChange, ensureProfile } from '../auth/auth.js';
-import { onLoginLoadDecks } from '../data/decks.js';
+import { onLoginLoadDecks, resetDecksState } from '../data/decks.js';
 import { syncCardsFromSupabase } from '../data/cards.js';
 import { AppState } from './state.js';
 import { initSporeCanvas } from './particles.js';
@@ -21,6 +21,8 @@ import { renderAuthScreen } from '../auth/auth-screen.js';
 import { renderAdvancedSearchScreen } from '../screens/advancedsearch/index.js';
 import { renderPublicDeckScreen }     from '../screens/publicdeck.js';
 import { renderGameDesignScreen }    from '../screens/gamedesign.js';
+import { renderProfileScreen }       from '../screens/profile.js';
+import { renderMatchScreen }         from '../screens/match.js';
 
 async function goToAuthScreen() {
   setNavigationHistory(["auth"]);
@@ -58,6 +60,18 @@ function initNavigation() {
       if (btn.dataset.screen === "gamedesign") {
         navigateTo("gamedesign");
         await renderGameDesignScreen();
+        return;
+      }
+
+      if (btn.dataset.screen === "profile") {
+        navigateTo("profile");
+        await renderProfileScreen();
+        return;
+      }
+
+      if (btn.dataset.screen === "match") {
+        navigateTo("match");
+        await renderMatchScreen();
         return;
       }
 
@@ -102,16 +116,24 @@ async function initApp() {
   try { renderAdvancedSearchScreen(); } catch (e) { console.error("renderAdvancedSearchScreen:", e); }
   try { await renderPublicDeckScreen(); } catch (e) { console.error("renderPublicDeckScreen:", e); }
   try { renderGameDesignScreen(); } catch (e) { console.error("renderGameDesignScreen:", e); }
+  try { await renderProfileScreen(); } catch (e) { console.error("renderProfileScreen:", e); }
+  try { await renderMatchScreen(); } catch (e) { console.error("renderMatchScreen:", e); }
 
   document.body.classList.toggle("theme-light", AppState.settings.theme === "light");
 
+  // Gestisce il redirect del 404.html di GitHub Pages (?p=/play)
+  const _redirectPath = new URLSearchParams(location.search).get("p");
+  if (_redirectPath) {
+    const cleanUrl = getBasePath() + _redirectPath;
+    history.replaceState(null, "", cleanUrl);
+  }
+
   // Determina la schermata iniziale dall'URL corrente
-  const initialScreen = screenFromPath(location.pathname);
+  const initialScreen = screenFromPath(_redirectPath || location.pathname);
   const isProtected = ["settings", "deckbuilder"].includes(initialScreen);
   const startScreen = isProtected ? "home" : initialScreen;
 
   setNavigationHistory([startScreen]);
-  // Sostituisce l'entry corrente nella history del browser con lo stato iniziale
   history.replaceState({ screen: startScreen }, "", location.pathname);
   navigateTo(startScreen, false);
 
@@ -135,6 +157,8 @@ async function initApp() {
     } else if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !user)) {
       _initialAuthHandled = true;
       AppState.username = "";
+      resetDecksState();
+      await renderDeckBuilderScreen();
       updateGameDesignNavVisibility("");
       updateGlobalUI(null);
     }

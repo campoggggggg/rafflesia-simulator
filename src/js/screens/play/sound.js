@@ -3,7 +3,8 @@
 // All sounds are optional: missing files fail silently.
 // ============================================================
 
-const BASE = "src/assets/sounds/";
+import { assetPath } from '../../core/router.js';
+const BASE = assetPath("src/assets/sounds") + "/";
 
 const FILES = {
   "card-play":     "card-play.mp3",      // summon, play territory, set sudden

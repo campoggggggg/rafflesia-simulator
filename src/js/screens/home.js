@@ -2,14 +2,14 @@
 // screens/home.js — Schermata Home rinnovata.
 // ============================================================
 
-import { navigateTo } from '../core/router.js';
+import { navigateTo, assetPath } from '../core/router.js';
 
 export function renderHomeScreen() {
   const screen = document.getElementById("screen-home");
 
   screen.innerHTML = `
     <div class="home-hero">
-      <img src="src/assets/home-hero.png" alt="Rafflesia Hero" class="home-hero-bg" />
+      <img src="${assetPath('src/assets/home-hero.png')}" alt="Rafflesia Hero" class="home-hero-bg" />
       <div class="home-hero-overlay"></div>
       <div class="home-hero-content">
         <h1 class="home-hero-title">RAFFLESIA TCG</h1>
@@ -46,7 +46,7 @@ export function renderHomeScreen() {
           </div>
 
           <div class="about-img-wrap">
-            <img src="src/assets/about-bg.jpg" class="about-bg-img" alt="">
+            <img src="${assetPath('src/assets/about-bg.jpg')}" class="about-bg-img" alt="">
             <span class="about-img-quote">"Non era un'alba. Era una sentenza."</span>
           </div>
         </div>
@@ -72,7 +72,7 @@ export function renderHomeScreen() {
               </ul>
             </div>
             <div class="rule-img-wrap">
-              <img src="src/assets/rules-bg1.jpg" class="rule-bg-img" alt="">
+              <img src="${assetPath('src/assets/rules-bg1.jpg')}" class="rule-bg-img" alt="">
               <span class="rule-img-quote">"Non chiedo ai morti di tornare. Chiedo alla terra di restituire ciò che ha preso."</span>
             </div>
           </div>
@@ -80,7 +80,7 @@ export function renderHomeScreen() {
           <!-- 2 — Inizio partita | immagine sx, testo dx -->
           <div class="rule-panel rule-even">
             <div class="rule-img-wrap">
-              <img src="src/assets/rules-bg2.jpg" class="rule-bg-img" alt="">
+              <img src="${assetPath('src/assets/rules-bg2.jpg')}" class="rule-bg-img" alt="">
               <span class="rule-img-quote">"KA-KAAWW!!"</span>
             </div>
             <div class="rule-content">
@@ -104,7 +104,7 @@ export function renderHomeScreen() {
               </ol>
             </div>
             <div class="rule-img-wrap">
-              <img src="src/assets/rules-bg3.jpg" class="rule-bg-img" alt="">
+              <img src="${assetPath('src/assets/rules-bg3.jpg')}" class="rule-bg-img" alt="">
               <span class="rule-img-quote">"Il ciclo non perdona, ma almeno ricomincia."</span>
             </div>
           </div>
@@ -112,7 +112,7 @@ export function renderHomeScreen() {
           <!-- 4 — Zone di gioco | immagine sx, testo dx -->
           <div class="rule-panel rule-even">
             <div class="rule-img-wrap">
-              <img src="src/assets/rules-bg4.jpg" class="rule-bg-img" alt="">
+              <img src="${assetPath('src/assets/rules-bg4.jpg')}" class="rule-bg-img" alt="">
               <span class="rule-img-quote">“Per vincere qualsiasi battaglia, devi combattere come se fossi già morto.”</span>
             </div>
             <div class="rule-content">
@@ -139,7 +139,7 @@ export function renderHomeScreen() {
               <p>I Territory si <em>tappano</em> (si girano) per produrre mana e si rizzano all'inizio del tuo turno.</p>
             </div>
             <div class="rule-img-wrap">
-              <img src="src/assets/rules-bg5.jpg" class="rule-bg-img" alt="">
+              <img src="${assetPath('src/assets/rules-bg5.jpg')}" class="rule-bg-img" alt="">
               <span class="rule-img-quote">"Il sangue non mente mai."</span>
             </div>
           </div>
@@ -147,7 +147,7 @@ export function renderHomeScreen() {
           <!-- 6 — Keyword | immagine sx, testo dx -->
           <div class="rule-panel rule-even">
             <div class="rule-img-wrap">
-              <img src="src/assets/rules-bg6.jpg" class="rule-bg-img" alt="">
+              <img src="${assetPath('src/assets/rules-bg6.jpg')}" class="rule-bg-img" alt="">
               <span class="rule-img-quote">"Sorgo dal fuoco, danzando nell'aria."</span>
             </div>
             <div class="rule-content">

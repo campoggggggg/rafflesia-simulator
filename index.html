@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rafflesia</title>
+  <!-- Base path per il router: "/rafflesia-simulator" su GitHub Pages, "" in locale -->
+  <!-- IMPORTANTE: cambia content="" in locale, content="/rafflesia-simulator" per il deploy -->
+  <meta name="app-base-path" content="">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,10 +41,12 @@
               <button class="topbar-dropdown-item" data-screen="publicdeck">Public Decks</button>
               <button class="topbar-dropdown-item" data-screen="deckbuilder">Deck Builder</button>
               <button class="topbar-dropdown-item" data-screen="advancedsearch">Advanced Search</button>
+              <button class="topbar-dropdown-item" data-screen="match">Match</button>
               <button class="topbar-dropdown-item" data-screen="gamedesign" id="gameDesignBtn" style="display:none">Game Design</button>
             </div>
           </div>
           <button class="topbar-nav-btn" data-screen="play">Play</button>
+          <button class="topbar-nav-btn" data-screen="profile" id="profileNavBtn" style="display:none">Profile</button>
         </nav>
       </div>
 
@@ -67,6 +72,8 @@
       <section id="screen-advancedsearch" class="screen"></section>
       <section id="screen-publicdeck"     class="screen"></section>
       <section id="screen-gamedesign"     class="screen"></section>
+      <section id="screen-profile"        class="screen"></section>
+      <section id="screen-match"          class="screen"></section>
     </main>
   </div>
 

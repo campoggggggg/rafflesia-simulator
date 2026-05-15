@@ -250,40 +250,25 @@ function _flipCoin(choice) {
     <div class="play-coinflip-outcome ${won ? "play-coinflip-win" : "play-coinflip-lose"}">
       The coin landed on <strong>${result}</strong> — you ${won ? "won!" : "lost!"}
     </div>
-    ${won ? `
-      <p class="play-coinflip-sub">You called it! Do you want to go first or second?</p>
-      <div class="play-coinflip-choices">
-        <button class="play-coinflip-btn" id="cfFirst">Go First</button>
-        <button class="play-coinflip-btn" id="cfSecond">Go Second</button>
-      </div>
-    ` : `
-      <p class="play-coinflip-sub">Your opponent goes first.</p>
-      <div class="play-coinflip-choices">
-        <button class="play-coinflip-btn" id="cfContinue">Continue</button>
-      </div>
-    `}
+    <p class="play-coinflip-sub">${won ? "You called it!" : "Your opponent lost the flip."} Do you want to go first or second?</p>
+    <div class="play-coinflip-choices">
+      <button class="play-coinflip-btn" id="cfFirst">Go First</button>
+      <button class="play-coinflip-btn" id="cfSecond">Go Second</button>
+    </div>
   `;
 
+  const _startGame = (firstRole) => {
+    import('./game-state.js').then(({ GameState: GS }) => { GS.activeRole = firstRole; });
+    import('./networking.js').then(({ broadcastSnapshot }) => broadcastSnapshot());
+    renderBoard();
+  };
+
   if (won) {
-    document.getElementById("cfFirst")?.addEventListener("click", () => {
-      // p1 (host) inizia
-      import('./game-state.js').then(({ GameState: GS }) => { GS.activeRole = "p1"; });
-      import('./networking.js').then(({ broadcastSnapshot }) => broadcastSnapshot());
-      renderBoard();
-    });
-    document.getElementById("cfSecond")?.addEventListener("click", () => {
-      // p2 (guest) inizia
-      import('./game-state.js').then(({ GameState: GS }) => { GS.activeRole = "p2"; });
-      import('./networking.js').then(({ broadcastSnapshot }) => broadcastSnapshot());
-      renderBoard();
-    });
+    document.getElementById("cfFirst")?.addEventListener("click",  () => _startGame("p1"));
+    document.getElementById("cfSecond")?.addEventListener("click", () => _startGame("p2"));
   } else {
-    document.getElementById("cfContinue")?.addEventListener("click", () => {
-      // p2 inizia di default quando p1 perde
-      import('./game-state.js').then(({ GameState: GS }) => { GS.activeRole = "p2"; });
-      import('./networking.js').then(({ broadcastSnapshot }) => broadcastSnapshot());
-      renderBoard();
-    });
+    document.getElementById("cfFirst")?.addEventListener("click",  () => _startGame("p1"));
+    document.getElementById("cfSecond")?.addEventListener("click", () => _startGame("p2"));
   }
 }
 

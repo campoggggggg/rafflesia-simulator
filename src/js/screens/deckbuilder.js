@@ -406,6 +406,10 @@ function wireEvents() {
 // ─────────────────────────────────────────────────────────────
 // DECK PANEL
 // ─────────────────────────────────────────────────────────────
+function countLegendary(ids) {
+  return ids.filter(id => CardMap.get(id)?.rarity === 'Legendary').length;
+}
+
 function renderDeckPanel() {
   const panel = document.getElementById('db-deck-panel');
   if (!panel) return;
@@ -436,10 +440,12 @@ function renderDeckPanel() {
   const cmdCard    = deck.commanderId ? CardMap.get(deck.commanderId) : null;
   const hoverColor = cmdCard ? (HOVER_HEX[cmdCard.color] ?? HOVER_HEX.colorless) : null;
   const cmdStyle   = [
-    cmdCard?.image  ? `--commander-bg:url('${String(cmdCard.image).replace(/'/g, '%27')}')` : '',
-    hoverColor      ? `--hover-color:${hoverColor}` : '',
+    hoverColor ? `--hover-color:${hoverColor}` : '',
   ].filter(Boolean).join(';');
   const cmdBg = cmdStyle ? `style="${cmdStyle}"` : '';
+
+  const legMain = countLegendary(deck.cards);
+  const legSide = countLegendary(deck.sideboardCards);
 
   panel.innerHTML = `
     <div class="db-deck-cols" ${cmdBg}>
@@ -453,6 +459,10 @@ function renderDeckPanel() {
       <div class="db-dc db-dc-right">
         ${mkSection(`MINION <span class="db-cnt">${deck.cards.filter(id => { const c=CardMap.get(id); return c&&c.type==='Minion'; }).length}</span>`, cardGroup(groups.Minion || {}, 'main'))}
         ${mkSection(`SIDEBOARD <span class="db-cnt">${deck.sideboardCards.length}/${MAX_SIDE}</span>`, cardGroup(side, 'side'))}
+        <div class="db-leg-badge-row">
+          <span class="db-leg-badge" title="Legendary nel main deck">◆ <span class="db-leg-n">main</span> ${legMain}</span>
+          <span class="db-leg-badge" title="Legendary nella sideboard">◆ <span class="db-leg-n">side</span> ${legSide}</span>
+        </div>
       </div>
     </div>
   `;

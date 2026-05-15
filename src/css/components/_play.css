@@ -124,46 +124,45 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   ZONA INFO AVVERSARIO (in cima all'arena)
-   Vita a sinistra + testo mano/mazzo al centro
+   INFO AVVERSARIO — nella sidebar destra (compatta)
    ═══════════════════════════════════════════════════════════ */
-.sim-opp-hand-zone {
+.sim-sidebar-opp-info {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 6px 16px;
-  height: 44px;
+  gap: 10px;
+  padding: 6px 10px;
   flex-shrink: 0;
   background: rgba(7,7,15,0.55);
   border-bottom: 0.5px solid rgba(110,88,89,0.25);
 }
 
-/* Badge vita avversario — in alto a sinistra */
+/* Badge vita avversario */
 .sim-opp-life-badge {
   display: flex;
   align-items: baseline;
-  gap: 5px;
+  gap: 4px;
   flex-shrink: 0;
-  padding: 3px 10px;
+  padding: 2px 8px;
   border-radius: 6px;
   background: rgba(239,68,68,0.10);
   border: 0.5px solid rgba(239,68,68,0.30);
 }
 .sim-opp-life-label {
-  font-size: 11px; color: rgba(252,165,165,0.70); font-family: 'Cinzel', serif;
+  font-size: 10px; color: rgba(252,165,165,0.70); font-family: 'Cinzel', serif;
   text-transform: uppercase; letter-spacing: .06em;
 }
 .sim-opp-life-val {
-  font-size: 22px; font-family: 'Cinzel', serif; font-weight: 700; color: #fca5a5;
+  font-size: 20px; font-family: 'Cinzel', serif; font-weight: 700; color: #fca5a5;
   line-height: 1;
 }
 
-/* Testo info mano/mazzo */
-.sim-opp-hand-info {
-  font-size: 13px; font-family: 'Inter', sans-serif; color: var(--text-secondary);
+/* Testo mano/deck compatto */
+.sim-sidebar-opp-counts {
+  font-size: 11px; font-family: 'Inter', sans-serif; color: var(--text-secondary);
+  white-space: nowrap;
 }
-.sim-opp-hand-info strong {
-  font-size: 15px; color: var(--text-primary); font-weight: 700;
+.sim-sidebar-opp-counts strong {
+  color: var(--text-primary); font-weight: 700;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -202,7 +201,6 @@
 /* Half avversario: 2 colonne (niente deck sulla destra) */
 .sim-half-inner--flipped {
   grid-template-columns: 96px 1fr;
-  transform: rotate(180deg);
 }
 
 /* Colonna sinistra: Commander */
@@ -267,7 +265,7 @@
   padding: 4px 6px;
   align-items: stretch;
 }
-.sim-terr-row-inner--flipped { transform: rotate(180deg); }
+/* .sim-terr-row-inner--flipped rimosso: la rotazione causava testo capovolto */
 
 /* Zona territorio principale (75%) */
 .sim-terr-zone-main {
@@ -359,8 +357,9 @@
 }
 
 .sim-zone-label {
-  font-size: 10px; color: var(--text-secondary); text-transform: uppercase;
-  letter-spacing: 0.05em; line-height: 1; white-space: nowrap; flex-shrink: 0;
+  font-size: 10px; color: rgba(184,172,165,0.70); text-transform: uppercase;
+  letter-spacing: 0.06em; line-height: 1; white-space: nowrap; flex-shrink: 0;
+  font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.80);
 }
 .sim-zone-count {
   font-size: 18px; font-family: 'Cinzel', serif; color: var(--text-primary);
@@ -1051,3 +1050,60 @@
 /* ── Misc ──────────────────────────────────────────────────── */
 .muted { color: var(--text-secondary); font-size: 13px; margin: 0; }
 .sim-root ~ #app-shell #sidebar { pointer-events: none; }
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMAZIONE SHAKE — attivazione carte
+   ═══════════════════════════════════════════════════════════ */
+@keyframes sim-shake {
+  0%   { transform: translateX(0); }
+  15%  { transform: translateX(-5px) rotate(-2deg); }
+  30%  { transform: translateX(5px)  rotate(2deg); }
+  45%  { transform: translateX(-4px) rotate(-1deg); }
+  60%  { transform: translateX(4px)  rotate(1deg); }
+  75%  { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
+
+.sim-card--shake {
+  animation: sim-shake 0.35s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ANIMAZIONE ATTACCO — la carta avanza e torna
+   ═══════════════════════════════════════════════════════════ */
+@keyframes sim-attack {
+  0%   { transform: translateY(0); }
+  35%  { transform: translateY(-14px); }
+  70%  { transform: translateY(-14px); }
+  100% { transform: translateY(0); }
+}
+
+.sim-card--attack {
+  animation: sim-attack 0.40s ease;
+  z-index: 20;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ATTACK SVG OVERLAY — freccia che segue il mouse
+   ═══════════════════════════════════════════════════════════ */
+.sim-attack-svg {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9990;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UNDO BUTTON
+   ═══════════════════════════════════════════════════════════ */
+.sim-undo-btn {
+  border-color: rgba(147,197,253,0.30) !important;
+  color: rgba(147,197,253,0.70) !important;
+}
+.sim-undo-btn:hover {
+  border-color: rgba(147,197,253,0.70) !important;
+  color: #93c5fd !important;
+  background: rgba(147,197,253,0.08) !important;
+}

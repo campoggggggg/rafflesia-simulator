@@ -19,12 +19,16 @@ function applyUserToUI(user) {
   const registerBtn = document.getElementById("registerBtn");
   if (!signInBtn || !registerBtn) return;
 
+  const profileBtn = document.getElementById("profileNavBtn");
+
   if (user) {
     signInBtn.textContent = `${AppState.username} · Sign Out`;
     registerBtn.style.display = "none";
+    if (profileBtn) profileBtn.style.display = "";
   } else {
     signInBtn.textContent = "Sign In";
     registerBtn.style.display = "";
+    if (profileBtn) profileBtn.style.display = "none";
   }
 }
 

@@ -3,6 +3,7 @@
 // ============================================================
 
 import { signIn, signUp, isUsernameAvailable } from './auth.js';
+import { assetPath } from '../core/router.js';
 
 const PASSWORD_RULES = [
   { test: (p) => p.length >= 8,          label: "At least 8 characters" },
@@ -23,7 +24,7 @@ export function renderAuthScreen() {
 
       <div class="auth-left-panel">
         <div class="auth-logo-row">
-          <img src="src/assets/rafflesia-logo.png" alt="Rafflesia TCG" class="auth-logo-img">
+          <img src="${assetPath('src/assets/rafflesia-logo.png')}" alt="Rafflesia TCG" class="auth-logo-img">
         </div>
 
         <!-- LOGIN -->
@@ -112,7 +113,7 @@ export function renderAuthScreen() {
       </div>
 
       <div class="auth-right-panel">
-        <img class="auth-bg-img" src="src/assets/login.jpg" alt="" />
+        <img class="auth-bg-img" src="${assetPath('src/assets/login.jpg')}" alt="" />
         <div class="auth-glass-overlay"></div>
       </div>
 

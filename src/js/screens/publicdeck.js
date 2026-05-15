@@ -94,15 +94,33 @@ function renderGrid(decks) {
 
   grid.querySelectorAll('.pd-card').forEach(el => {
     el.addEventListener('click', () => onCardClick(el.dataset.deckId));
+    wireTilt(el);
+  });
+}
+
+/* 3D tilt su hover — CSS transform, nessuna libreria */
+function wireTilt(el) {
+  el.addEventListener('mousemove', e => {
+    const r   = el.getBoundingClientRect();
+    const cx  = r.left + r.width  / 2;
+    const cy  = r.top  + r.height / 2;
+    const dx  = (e.clientX - cx) / (r.width  / 2);   // -1..1
+    const dy  = (e.clientY - cy) / (r.height / 2);   // -1..1
+    el.style.transform = `perspective(700px) rotateY(${dx * 6}deg) rotateX(${-dy * 4}deg) translateY(-4px)`;
+  });
+  el.addEventListener('mouseleave', () => {
+    el.style.transform = '';
   });
 }
 
 function buildCard(d) {
-  const commander = CardMap.get(String(d.commander_id));
-  const colorHex  = COLOR_HEX[d.commander_color] || COLOR_HEX.colorless;
-  const imgSrc    = commander ? commander.image : '';
-  const dateStr   = d.created_at ? timeAgo(new Date(d.created_at)) : '—';
-  const tags      = (d.tags || []).filter(Boolean);
+  const commander  = CardMap.get(String(d.commander_id));
+  const colorHex   = COLOR_HEX[d.commander_color] || COLOR_HEX.colorless;
+  const imgSrc     = commander ? commander.image : '';
+  const dateStr    = d.created_at ? timeAgo(new Date(d.created_at)) : '—';
+  const tags       = (d.tags || []).filter(Boolean);
+  const totalCards = ((d.cards || []).length + (d.territory_cards || []).length + (d.sideboard_cards || []).length) + (d.commander_id ? 1 : 0);
+  const cmdName    = commander ? commander.name : '—';
 
   const blurStyle = imgSrc
     ? `background-image: url('${imgSrc}'); background-size: 140%; background-position: center 5%;`
@@ -114,15 +132,21 @@ function buildCard(d) {
        </div>`
     : '';
 
+  const colorBadge = `<span class="pd-badge pd-badge-color" style="--pd-badge-c:${colorHex}">${esc(d.commander_color || 'colorless')}</span>`;
+  const countBadge = `<span class="pd-badge pd-badge-count">${totalCards} cards</span>`;
+
   return `
     <div class="pd-card" data-deck-id="${esc(d.id)}">
       <div class="pd-card-img">
         <div class="pd-card-img-blur" style="${blurStyle}"></div>
         <div class="pd-card-img-overlay"></div>
+        <div class="pd-card-rune-border"></div>
         <div class="pd-card-color-bar" style="background: ${colorHex};"></div>
         ${tagsHtml}
         <div class="pd-card-info">
           <div class="pd-card-name">${esc(d.name)}</div>
+          <div class="pd-card-cmd">◆ ${esc(cmdName)}</div>
+          <div class="pd-card-badges">${colorBadge}${countBadge}</div>
           <div class="pd-card-meta">${esc(d.author_username || 'Anonimo')} <span class="pd-card-dot">·</span> ${dateStr}</div>
         </div>
       </div>
@@ -158,7 +182,7 @@ function openDeckModal(deck, user) {
       const name = card ? esc(card.name) : `#${id}`;
       const qtyStr = qty > 1 ? `<span class="pdm-qty">×${qty}</span>` : '';
       const colorDot = card ? `<span class="pdm-dot" style="background:${COLOR_HEX[card.color] || COLOR_HEX.colorless}"></span>` : '';
-      return `<div class="pdm-row">${colorDot}<span class="pdm-name">${name}</span>${qtyStr}</div>`;
+      return `<div class="pdm-row" data-card-id="${id}">${colorDot}<span class="pdm-name">${name}</span>${qtyStr}</div>`;
     }).join('');
     return `<div class="pdm-section"><div class="pdm-sec-label">${label}</div>${rows}</div>`;
   };
@@ -166,7 +190,7 @@ function openDeckModal(deck, user) {
   const cmdSection = commander
     ? `<div class="pdm-section">
          <div class="pdm-sec-label">COMMANDER</div>
-         <div class="pdm-row pdm-row-cmd">
+         <div class="pdm-row pdm-row-cmd" data-card-id="${esc(deck.commander_id)}">
            <span class="pdm-dot" style="background:${colorHex}"></span>
            <span class="pdm-name">${esc(commander.name)}</span>
          </div>
@@ -215,7 +239,42 @@ function openDeckModal(deck, user) {
 
   document.body.appendChild(overlay);
 
-  const close = () => overlay.remove();
+  // hover preview tooltip per le carte in lista
+  const tt = document.createElement('div');
+  tt.className = 'pdm-card-tt';
+  tt.setAttribute('aria-hidden', 'true');
+  tt.innerHTML = `<img class="pdm-card-tt-img" src="" alt="">`;
+  document.body.appendChild(tt);
+  const ttImg = tt.querySelector('.pdm-card-tt-img');
+
+  const showTT = (card, e) => {
+    if (!card?.image) return;
+    ttImg.src = card.image;
+    tt.removeAttribute('aria-hidden');
+    moveTT(e);
+  };
+  const hideTT = () => tt.setAttribute('aria-hidden', 'true');
+  const moveTT = e => {
+    const w = 220, margin = 10;
+    let x = e.clientX + 16;
+    let y = e.clientY - 110;
+    if (x + w + margin > window.innerWidth) x = e.clientX - w - 10;
+    if (x < margin) x = margin;
+    if (y + 308 + margin > window.innerHeight) y = window.innerHeight - 308 - margin;
+    if (y < margin) y = margin;
+    tt.style.left = x + 'px';
+    tt.style.top  = y + 'px';
+  };
+
+  overlay.querySelectorAll('.pdm-row[data-card-id]').forEach(row => {
+    const card = CardMap.get(row.dataset.cardId);
+    if (!card) return;
+    row.addEventListener('mouseenter', e => showTT(card, e));
+    row.addEventListener('mousemove',  moveTT);
+    row.addEventListener('mouseleave', hideTT);
+  });
+
+  const close = () => { overlay.remove(); tt.remove(); };
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   document.getElementById('pdm-close').addEventListener('click', close);
 
@@ -678,12 +737,14 @@ function injectStyles() {
   border: 1px solid var(--border);
   background: var(--bg-elevated);
   cursor: pointer;
-  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+  /* tilt via JS — transition only on leave */
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  transform-style: preserve-3d;
+  will-change: transform;
 }
 .pd-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.65);
-  border-color: var(--border-gold);
+  box-shadow: 0 14px 36px rgba(0,0,0,0.70), 0 0 0 1px rgba(95,140,95,0.35);
+  border-color: rgba(95,140,80,0.50);
 }
 
 /* contenitore immagine — altezza fissa rettangolare */
@@ -1008,6 +1069,83 @@ function injectStyles() {
   padding: 6px 10px;
   outline: none;
 }
+
+/* ═══ RUNE BORDER — bordo runico verde al hover ══════════════ */
+.pd-card-rune-border {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.22s ease, box-shadow 0.22s ease;
+  box-shadow: inset 0 0 0 1.5px rgba(95,140,80,0.0), 0 0 0 0 rgba(95,140,80,0.0);
+}
+.pd-card:hover .pd-card-rune-border {
+  opacity: 1;
+  box-shadow: inset 0 0 0 1.5px rgba(95,140,80,0.55), 0 0 18px rgba(95,140,80,0.18);
+}
+
+/* ═══ BADGES colore / card count ════════════════════════════ */
+.pd-card-badges {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin: 2px 0 3px;
+}
+
+.pd-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  padding: 2px 6px;
+  line-height: 1.4;
+}
+
+.pd-badge-color {
+  background: color-mix(in srgb, var(--pd-badge-c, #555) 30%, transparent);
+  border: 0.5px solid color-mix(in srgb, var(--pd-badge-c, #555) 60%, transparent);
+  color: color-mix(in srgb, var(--pd-badge-c, #aaa) 80%, white 20%);
+}
+
+.pd-badge-count {
+  background: rgba(184,172,165,0.08);
+  border: 0.5px solid rgba(184,172,165,0.20);
+  color: rgba(255,255,255,0.65);
+}
+
+/* ═══ COMMANDER NAME sotto il titolo ════════════════════════ */
+.pd-card-cmd {
+  font-size: 11px;
+  color: rgba(255,255,255,0.60);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.02em;
+}
+
+/* ═══ HOVER CARD PREVIEW (modal) ════════════════════════════ */
+.pdm-card-tt {
+  position: fixed;
+  z-index: 2000;
+  pointer-events: none;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 0.5px solid rgba(47,58,52,0.8);
+  background: #0E1210;
+  width: 220px;
+  opacity: 1;
+  transition: opacity 0.15s;
+}
+.pdm-card-tt[aria-hidden="true"] { opacity: 0; }
+.pdm-card-tt-img { display: block; width: 100%; height: auto; }
+
+/* ═══ HOVER cursor su righe carta nel modal ══════════════════ */
+.pdm-row[data-card-id] { cursor: default; }
+.pdm-row[data-card-id]:hover { background: var(--bg-elevated); }
 
   `;
   document.head.appendChild(style);

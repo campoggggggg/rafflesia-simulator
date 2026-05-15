@@ -8,6 +8,8 @@
 }
 
 /* ── Topbar ───────────────────────────────────────────────── */
+body.sim-active #topbar { display: none !important; }
+
 #topbar {
   position: absolute;
   top: 0;

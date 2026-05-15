@@ -84,10 +84,16 @@ export async function onLoginLoadDecks() {
   const remote = await loadDecksFromSupabase();
 
   if (remote && remote.length > 0) {
+    // Mazzi esistenti su Supabase: usa quelli come fonte di verità
     AppState.decks         = remote;
     AppState.currentDeckId = remote[0].id;
   } else {
-    for (const deck of AppState.decks) {
+    // Primo login: carica i mazzi locali su Supabase solo se non sono
+    // il deck placeholder (id:1 senza carte) — altrimenti si creano mazzi vuoti
+    const localDecksToUpload = AppState.decks.filter(
+      d => !d.supabase_id && (d.commanderId || d.cards.length > 0 || d.name !== "Starter Deck")
+    );
+    for (const deck of localDecksToUpload) {
       await saveDeckToSupabase(deck);
     }
     const uploaded = await loadDecksFromSupabase();
@@ -101,6 +107,11 @@ export async function onLoginLoadDecks() {
   if (cloudSettings) {
     AppState.settings = { ...AppState.settings, ...cloudSettings };
   }
+}
+
+export function resetDecksState() {
+  AppState.decks         = [{ id: 1, name: "Starter Deck", commanderId: null, cards: [], territoryCards: [], sideboardCards: [] }];
+  AppState.currentDeckId = 1;
 }
 
 // Convenienza: persiste il mazzo corrente su Supabase.

@@ -22,6 +22,10 @@ let _suddenPopupRole = null;
 // ── Pile popup state ──────────────────────────────────────────
 let _pilePopup = null;  // { role, zone, label }
 
+// ── Attack arrow state ────────────────────────────────────────
+let _attackState = null; // { attackerId, attackerName, sx, sy }
+let _attackListenersAttached = false;
+
 export function closeContextMenu() {
   _ctxMenu    = null;
   _previewCard = null;
@@ -33,6 +37,7 @@ export function closeContextMenu() {
 export function renderBoard() {
   const screen = document.getElementById("screen-play");
   if (!screen || !screen.classList.contains("active")) return;
+  document.body.classList.add("sim-active");
 
   const my   = GameState.myRole;
   const opp  = getOpponentRole(my);
@@ -51,15 +56,6 @@ export function renderBoard() {
            ARENA — main play area (left ~75%)
            ═══════════════════════════════════════════ -->
       <div class="sim-arena" id="simArena">
-
-        <!-- ZONA INFO AVVERSARIO (in cima) — vita a sinistra, info mano/mazzo al centro -->
-        <div class="sim-opp-hand-zone" id="oppHandZone">
-          <div class="sim-opp-life-badge">
-            <span class="sim-opp-life-label">HP</span>
-            <span class="sim-opp-life-val" id="oppLifeVal">${oppP.life}</span>
-          </div>
-          ${_renderOppHandCards(oppP, opp)}
-        </div>
 
         <!-- ZONA TERRITORIO AVVERSARIO -->
         <div class="sim-territory-row sim-territory-row--opp" data-role="${opp}">
@@ -118,6 +114,19 @@ export function renderBoard() {
           <button class="sim-confirm-no"  id="simShowHandNo">No</button>
         </div>
       </div>
+
+      <!-- SVG overlay per freccia d'attacco -->
+      <svg id="simAttackSvg" class="sim-attack-svg" style="display:none"
+           xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444"/>
+          </marker>
+        </defs>
+        <line id="simAttackLine" stroke="#ef4444" stroke-width="2.5"
+              stroke-dasharray="8 4" marker-end="url(#arrowhead)"
+              x1="0" y1="0" x2="0" y2="0"/>
+      </svg>
 
     </div>
   `;
@@ -259,6 +268,8 @@ function _renderTopBar() {
       <button class="danger-btn sim-endturn-btn" id="simEndTurnBtn" ${!isMyTurn ? "disabled" : ""}>
         End Turn
       </button>
+
+      <button class="sim-utility-btn sim-undo-btn" id="simUndoBtn" title="Undo last action">↩ Undo</button>
     </div>
   `;
 }
@@ -282,7 +293,7 @@ function _renderOppHandCards(player, role) {
 
 function _renderHalf(player, role, flipped) {
   if (flipped) {
-    // Half avversario: commander | field + quest (speculare)
+    // Half avversario: commander | field + quest (speculare, NO rotazione 180°)
     return `
       <div class="sim-half-inner sim-half-inner--flipped">
         <div class="sim-col-left">
@@ -323,7 +334,7 @@ function _renderHalf(player, role, flipped) {
 
 function _renderTerritoryRow(player, role, flipped) {
   return `
-    <div class="sim-terr-row-inner ${flipped ? "sim-terr-row-inner--flipped" : ""}">
+    <div class="sim-terr-row-inner">
 
       <!-- Territory Deck (spostato qui dalla colonna sinistra) -->
       ${_renderTerritoryDeckZone(player, role, flipped)}
@@ -339,7 +350,7 @@ function _renderTerritoryRow(player, role, flipped) {
         </div>
       </div>
 
-      <!-- Sudden: 3 slot fissi -->
+      <!-- Face-down: 3 slot fissi -->
       ${_renderSecondaryZone(player, role)}
 
       <!-- Cimitero -->
@@ -380,10 +391,11 @@ function _renderTerritoryDeckZone(player, role, isOpp) {
 
 // Mazzo principale nel campo del giocatore (colonna destra del half)
 function _renderMainDeckZone(player, role) {
-  const count = player.deck.length;
+  const count  = player.deck.length;
+  const isOwn  = GameState.myRole === role;
   return `
     <div class="sim-zone sim-zone--maindeck" data-zone="deck" data-role="${role}"
-         title="Main Deck: ${count} cards">
+         ${isOwn ? `data-maindeck="${role}" title="Right-click to mill"` : `title="Main Deck: ${count} cards"`}>
       <div class="sim-zone-label">Deck</div>
       <div class="sim-zone-count">${count}</div>
       ${count > 0 ? `<div class="sim-card sim-card--back sim-card--pile"></div>` : ""}
@@ -434,7 +446,7 @@ function _renderSecondaryZone(player, role) {
 
   return `
     <div class="sim-zone sim-zone--secondary" data-zone="secondaryZone" data-role="${role}">
-      <div class="sim-zone-label">Sudden (${count}/3)</div>
+      <div class="sim-zone-label">Face-down (${count}/3)</div>
       <div class="sim-sudden-slots">
         ${slots}
       </div>
@@ -476,12 +488,23 @@ function _renderDropTarget(zone, role) {
 
 function _renderSidebar(myP, my, oppP, opp) {
   return `
-    <!-- Preview carta hoverata (metà superiore) -->
+    <!-- Info avversario: HP + mano/deck compatti -->
+    <div class="sim-sidebar-opp-info" id="oppHandZone">
+      <div class="sim-opp-life-badge">
+        <span class="sim-opp-life-label">HP</span>
+        <span class="sim-opp-life-val" id="oppLifeVal">${oppP.life}</span>
+      </div>
+      <div class="sim-sidebar-opp-counts">
+        Hand: <strong>${oppP.hand.length}</strong> &nbsp;|&nbsp; Deck: <strong>${oppP.deck.length}</strong>
+      </div>
+    </div>
+
+    <!-- Preview carta hoverata -->
     <div class="sim-sidebar-preview" id="simSidebarPreview">
       <div class="sim-sidebar-preview-empty">Hover a card to preview</div>
     </div>
 
-    <!-- Log + chat (metà inferiore) -->
+    <!-- Log + chat -->
     <div class="sim-log" id="simLog">
       <div class="sim-log-title">Log</div>
       <div class="sim-log-entries" id="simLogEntries">
@@ -546,7 +569,7 @@ function _renderHandBar(player, role) {
           </div>
           <button class="sim-hand-life-btn" id="simLifePlus" data-role="${role}" data-delta="1">+</button>
         </div>
-        <button class="secondary-btn" id="simDrawBtn" ${!isMyTurn ? "disabled" : ""}>Draw</button>
+        <button class="secondary-btn" id="simDrawBtn">Draw</button>
       </div>
     </div>
   `;
@@ -612,6 +635,7 @@ function _attachEvents() {
   const my = GameState.myRole;
 
   document.getElementById("simExitBtn")?.addEventListener("click", () => {
+    document.body.classList.remove("sim-active");
     import('./play-menu.js').then(m => m.renderPlayScreen());
   });
 
@@ -624,8 +648,7 @@ function _attachEvents() {
   });
 
   document.getElementById("simDrawBtn")?.addEventListener("click", () => {
-    if (GameState.activeRole === my) drawOne(my);
-    // drawOne chiama playSound("card-draw") via synced — nessun duplicato
+    drawOne(my);
   });
 
   // Bottone mute suoni
@@ -749,6 +772,15 @@ function _attachEvents() {
     });
   });
 
+  // Main deck: tasto destro → context menu "Mill"
+  document.querySelectorAll("[data-maindeck]").forEach(el => {
+    el.addEventListener("contextmenu", e => {
+      e.preventDefault();
+      e.stopPropagation();
+      _showMainDeckCtxMenu(e.clientX, e.clientY, el.dataset.maindeck);
+    });
+  });
+
   // Life +/- buttons
   document.querySelectorAll(".sim-life-btn").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -819,7 +851,13 @@ function _attachEvents() {
   chatBtn?.addEventListener("click", sendChat);
   chatInput?.addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
 
+  // Undo button
+  document.getElementById("simUndoBtn")?.addEventListener("click", () => {
+    import('./card-actions.js').then(({ undoLastAction }) => undoLastAction());
+  });
+
   _attachDragDrop();
+  _attachAttackMode();
 }
 
 // ── Drag & Drop ───────────────────────────────────────────────
@@ -851,9 +889,94 @@ function _attachDragDrop() {
       const targetZone = el.dataset.zone;
       const targetRole = el.dataset.role;
       if (!instanceId || !targetZone || !targetRole) return;
+      // Drag da mano a territory deck → va in fondo al main deck e si evoca una terra
+      if (targetZone === "territoryDeck") {
+        import('./card-actions.js').then(({ sendHandToBottomDeckAndPlayTerritory }) => {
+          sendHandToBottomDeckAndPlayTerritory(instanceId, el.dataset.role);
+        });
+        return;
+      }
       endDrag(instanceId, targetZone, targetRole);
     });
   });
+}
+
+// ── Attack mode (freccia SVG) ─────────────────────────────────
+
+function _attachAttackMode() {
+  // Aggiorna il riferimento al line element (il DOM viene ricreato ad ogni render)
+  window._startAttackMode = (instanceId, attackerName) => {
+    const cardEl = document.querySelector(`[data-instance="${instanceId}"][data-zone="primaryZone"]`);
+    if (!cardEl) return;
+    const rect = cardEl.getBoundingClientRect();
+    const sx = rect.left + rect.width  / 2;
+    const sy = rect.top  + rect.height / 2;
+
+    _attackState = { attackerId: instanceId, attackerName, sx, sy };
+    const svg  = document.getElementById("simAttackSvg");
+    const line = document.getElementById("simAttackLine");
+    if (svg)  svg.style.display = "block";
+    if (line) {
+      line.setAttribute("x1", sx); line.setAttribute("y1", sy);
+      line.setAttribute("x2", sx); line.setAttribute("y2", sy);
+    }
+    document.body.style.cursor = "crosshair";
+  };
+
+  // I listener globali vengono aggiunti una sola volta
+  if (_attackListenersAttached) return;
+  _attackListenersAttached = true;
+
+  document.addEventListener("mousemove", e => {
+    if (!_attackState) return;
+    const line = document.getElementById("simAttackLine");
+    if (line) { line.setAttribute("x2", e.clientX); line.setAttribute("y2", e.clientY); }
+  }, { capture: true });
+
+  document.addEventListener("click", e => {
+    if (!_attackState) return;
+
+    // Click su HP avversario (span valore, badge intero, o zona hp opp)
+    const oppHpZone = document.getElementById("oppHandZone");
+    const oppBadge = oppHpZone?.querySelector(".sim-opp-life-badge");
+    if (oppBadge && (oppBadge === e.target || oppBadge.contains(e.target))) {
+      e.stopPropagation();
+      const snap = { ..._attackState };
+      _cancelAttackMode();
+      import('./card-actions.js').then(({ logAttackOnOpponent }) => {
+        logAttackOnOpponent(snap.attackerId, snap.attackerName);
+      });
+      return;
+    }
+
+    // Click su minion avversario
+    const targetCard = e.target.closest("[data-instance][data-zone='primaryZone']");
+    if (targetCard) {
+      const targetRole = targetCard.dataset.role;
+      if (targetRole !== GameState.myRole) {
+        const snap = { ..._attackState };
+        _cancelAttackMode();
+        import('./card-actions.js').then(({ logAttackOnMinion }) => {
+          logAttackOnMinion(snap.attackerId, snap.attackerName, targetCard.dataset.instance);
+        });
+        return;
+      }
+    }
+
+    // Click altrove → annulla
+    _cancelAttackMode();
+  }, { capture: true });
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && _attackState) _cancelAttackMode();
+  });
+}
+
+function _cancelAttackMode() {
+  _attackState = null;
+  const svg = document.getElementById("simAttackSvg");
+  if (svg) svg.style.display = "none";
+  document.body.style.cursor = "";
 }
 
 // ── Show hand confirm popup ───────────────────────────────────
@@ -995,14 +1118,56 @@ function _showTerritoryCtxMenu(x, y, role) {
   header.textContent = "Territory Deck";
   menu.appendChild(header);
 
-  const btn = document.createElement("button");
-  btn.className   = "sim-ctx-item";
-  btn.textContent = "Play territory";
-  btn.addEventListener("click", () => {
+  const btnPlay = document.createElement("button");
+  btnPlay.className   = "sim-ctx-item";
+  btnPlay.textContent = "Play territory";
+  btnPlay.addEventListener("click", () => {
     playTerritory(role);
     _removeCtxDOM();
   });
-  menu.appendChild(btn);
+  menu.appendChild(btnPlay);
+
+  const btnMill = document.createElement("button");
+  btnMill.className   = "sim-ctx-item";
+  btnMill.textContent = "Mill";
+  btnMill.addEventListener("click", () => {
+    import('./card-actions.js').then(({ millTerritory }) => {
+      millTerritory(role);
+      _removeCtxDOM();
+    });
+  });
+  menu.appendChild(btnMill);
+
+  document.body.appendChild(menu);
+  const rect = menu.getBoundingClientRect();
+  if (rect.right  > window.innerWidth)  menu.style.left = `${window.innerWidth  - rect.width  - 8}px`;
+  if (rect.bottom > window.innerHeight) menu.style.top  = `${window.innerHeight - rect.height - 8}px`;
+}
+
+// ── Main deck context menu ────────────────────────────────────
+
+function _showMainDeckCtxMenu(x, y, role) {
+  _removeCtxDOM();
+  const menu = document.createElement("div");
+  menu.className = "sim-ctx-menu";
+  menu.style.left = `${x}px`;
+  menu.style.top  = `${y}px`;
+
+  const header = document.createElement("div");
+  header.className   = "sim-ctx-header";
+  header.textContent = "Main Deck";
+  menu.appendChild(header);
+
+  const btnMill = document.createElement("button");
+  btnMill.className   = "sim-ctx-item";
+  btnMill.textContent = "Mill";
+  btnMill.addEventListener("click", () => {
+    import('./card-actions.js').then(({ millMainDeck }) => {
+      millMainDeck(role);
+      _removeCtxDOM();
+    });
+  });
+  menu.appendChild(btnMill);
 
   document.body.appendChild(menu);
   const rect = menu.getBoundingClientRect();

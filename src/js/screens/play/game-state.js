@@ -243,7 +243,12 @@ export function setPhase(phase) {
 }
 
 export function toggleTurn() {
-  GameState.activeRole = GameState.activeRole === "p1" ? "p2" : "p1";
+  const newActive = GameState.activeRole === "p1" ? "p2" : "p1";
+  // Unstappa tutte le creature e le terre del giocatore che diventa attivo
+  const p = getPlayer(newActive);
+  [...p.primaryZone, ...p.territoryZone, ...p.tertiaryZone].forEach(c => { c.rotation = 0; });
+  if (p.commanderCard) p.commanderCard.rotation = 0;
+  GameState.activeRole = newActive;
   GameState.phase      = "prep";
   log(`Turn passed to ${displayName(GameState.activeRole)}.`);
 }
