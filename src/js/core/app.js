@@ -76,10 +76,10 @@ function initNavigation() {
   });
 }
 
-const ADMIN_USERNAMES = ['camposssssss', 'gyomber', 'skyness'];
+const ADMIN_USERNAMES = ['camposssssss', 'gyomber', 'skyness', 'skypeness'];
 
 function updateAdminNavVisibility(username) {
-  const isAdmin = username && ADMIN_USERNAMES.includes(username);
+  const isAdmin = username && ADMIN_USERNAMES.includes(username.toLowerCase());
   const gameDesignBtn = document.getElementById('gameDesignBtn');
   const matchBtn      = document.getElementById('matchNavBtn');
   if (gameDesignBtn) gameDesignBtn.style.display = isAdmin ? '' : 'none';

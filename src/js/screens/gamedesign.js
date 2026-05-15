@@ -10,7 +10,7 @@ import { CardDatabase }  from '../data/cards.js';
 import { getUser }       from '../auth/auth.js';
 import { showGlobalToast } from '../core/ui.js';
 
-const ADMIN_USERNAMES = ['camposssssss', 'gyomber', 'skyness'];
+const ADMIN_USERNAMES = ['camposssssss', 'gyomber', 'skyness', 'skypeness'];
 
 const COLORS = [
   { key: 'blue',      label: 'Blue',      hex: '#336699' },
@@ -42,7 +42,7 @@ export async function renderGameDesignScreen() {
   if (!screen) return;
 
   _currentUser = await getUser();
-  const username = _currentUser?.user_metadata?.username || '';
+  const username = (_currentUser?.user_metadata?.username || '').toLowerCase();
 
   if (!_currentUser || !ADMIN_USERNAMES.includes(username)) {
     screen.innerHTML = `<div class="gd-access-denied"><p>Accesso riservato agli admin.</p></div>`;
