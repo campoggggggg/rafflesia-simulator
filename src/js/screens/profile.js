@@ -79,6 +79,8 @@ function buildSkeleton(profile, decks) {
   const socialLabel = profile.social_label || '';
   const socialUrl   = profile.social_url   || '';
   const favCardId   = profile.favorite_card_id ? String(profile.favorite_card_id) : '';
+  // usa l'username dal profilo DB se disponibile, fallback su AppState
+  const username  = profile.username || AppState.username || '?';
 
   const favCard = favCardId ? CardDatabase.find(c => c.id === favCardId) : null;
 
@@ -107,7 +109,7 @@ function buildSkeleton(profile, decks) {
       <div class="prof-avatar" id="prof-avatar-display">
         ${avatarUrl
           ? `<img src="${esc(avatarUrl)}" alt="avatar" class="prof-avatar-img" id="prof-avatar-img">`
-          : `<div class="prof-avatar-placeholder" id="prof-avatar-placeholder">${(AppState.username || '?')[0].toUpperCase()}</div>`}
+          : `<div class="prof-avatar-placeholder" id="prof-avatar-placeholder">${username[0].toUpperCase()}</div>`}
       </div>
       <button class="prof-avatar-edit-btn" id="prof-avatar-btn" title="Cambia foto">
         <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21a1 1 0 0 0 0-1.42l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.82z"/></svg>
@@ -115,7 +117,7 @@ function buildSkeleton(profile, decks) {
       <input type="file" id="prof-avatar-input" accept="image/*" style="display:none">
     </div>
     <div class="prof-header-info">
-      <div class="prof-username">${esc(AppState.username)}</div>
+      <div class="prof-username">${esc(username)}</div>
       ${socialHtml}
     </div>
   </div>
@@ -234,20 +236,32 @@ function wireEvents(user, profile) {
 // UPLOAD AVATAR
 // ─────────────────────────────────────────────────────────────
 async function uploadAvatar(user, file) {
-  const ext = file.name.split('.').pop() || 'jpg';
+  // normalizza sempre su .jpg per semplicità — Supabase non deduce il tipo dall'estensione
+  const ext  = file.type === 'image/png' ? 'png' : 'jpg';
   const path = `avatars/${user.id}.${ext}`;
 
-  const { error: upErr } = await db.storage.from('avatars').upload(path, file, { upsert: true });
-  if (upErr) { showGlobalToast('Errore upload avatar.', 'error'); return; }
+  const { error: upErr } = await db.storage.from('avatars').upload(path, file, {
+    upsert:      true,
+    contentType: file.type,   // essenziale per PNG — senza questo Supabase può rifiutare
+  });
+  if (upErr) {
+    console.warn('uploadAvatar:', upErr.message);
+    showGlobalToast(`Errore upload: ${upErr.message}`, 'error');
+    return;
+  }
 
+  // aggiungi cache-buster per forzare il refresh del browser dopo l'upsert
   const { data: urlData } = db.storage.from('avatars').getPublicUrl(path);
   const publicUrl = urlData?.publicUrl;
-  if (!publicUrl) return;
+  if (!publicUrl) { showGlobalToast('URL avatar non disponibile.', 'error'); return; }
 
   const { error: updErr } = await db.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
-  if (updErr) { showGlobalToast('Errore aggiornamento avatar.', 'error'); return; }
+  if (updErr) {
+    console.warn('updateProfile avatar_url:', updErr.message);
+    showGlobalToast('Errore aggiornamento profilo.', 'error');
+    return;
+  }
 
-  // Aggiorna UI
   const display = document.getElementById('prof-avatar-display');
   if (display) {
     display.innerHTML = `<img src="${publicUrl}?t=${Date.now()}" alt="avatar" class="prof-avatar-img">`;

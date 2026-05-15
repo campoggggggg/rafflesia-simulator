@@ -4,6 +4,104 @@
 
 import { navigateTo, assetPath } from '../core/router.js';
 
+let _parallaxCleanup = null;
+
+export function cleanupHomeParallax() {
+  if (_parallaxCleanup) { _parallaxCleanup(); _parallaxCleanup = null; }
+}
+
+function initParallax() {
+  if (_parallaxCleanup) _parallaxCleanup();
+
+  const heroBg      = document.querySelector('.home-hero-bg');
+  const heroContent = document.querySelector('.home-hero-content');
+  if (!heroBg) return;
+
+  // ── slide-in laterale con IntersectionObserver ───────────
+  // Le schede partono fuori schermo (translateX ±120px, opacity 0)
+  // e scivolano al centro quando entrano nel viewport.
+  // Poi durante lo scroll continuano a muoversi leggermente (parallax leggero).
+  const panels = Array.from(document.querySelectorAll('.rule-panel'));
+  const panelState = new Map(); // panel → { visible, direction }
+
+  panels.forEach((panel, i) => {
+    const dir = panel.classList.contains('rule-odd') ? -1 : 1; // odd=da sx, even=da dx
+    panelState.set(panel, { visible: false, direction: dir });
+    panel.style.transform = `translateX(${dir * 120}px)`;
+    panel.style.opacity   = '0';
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const state = panelState.get(entry.target);
+      if (!state) return;
+      if (entry.isIntersecting && !state.visible) {
+        state.visible = true;
+        // transizione CSS gestita con transition property temporanea
+        entry.target.style.transition = 'transform 0.65s cubic-bezier(0.22,1,0.36,1), opacity 0.55s ease';
+        entry.target.style.transform  = 'translateX(0)';
+        entry.target.style.opacity    = '1';
+        // dopo la transizione, rimuove la transition per lasciare il parallax libero
+        setTimeout(() => {
+          if (entry.target.style.transition) {
+            entry.target.style.transition = 'border-color 0.3s, box-shadow 0.3s';
+          }
+        }, 700);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  panels.forEach(p => observer.observe(p));
+
+  // ── scroll handler: parallax su tutto ───────────────────
+  let ticking = false;
+
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const scrollY = window.scrollY;
+
+      // hero bg a 0.25x — più lento, più profondo
+      heroBg.style.transform = `translateY(${scrollY * 0.25}px)`;
+
+      // hero content sale lentamente e sfuma
+      if (heroContent) {
+        const progress = Math.min(scrollY / 600, 1);
+        heroContent.style.transform = `translateY(${-scrollY * 0.12}px)`;
+        heroContent.style.opacity   = String(Math.max(0, 1 - progress * 1.5));
+      }
+
+      // immagini interne ai panel: parallax locale molto lento
+      document.querySelectorAll('.rule-img-wrap, .about-img-wrap').forEach(wrap => {
+        const rect   = wrap.getBoundingClientRect();
+        const center = rect.top + rect.height / 2 - window.innerHeight / 2;
+        const img    = wrap.querySelector('.rule-bg-img, .about-bg-img');
+        if (img) img.style.transform = `translateY(${center * 0.07}px) scale(1.08)`;
+      });
+
+      ticking = false;
+    });
+  };
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  _parallaxCleanup = () => {
+    window.removeEventListener('scroll', onScroll);
+    observer.disconnect();
+    // ripristina le proprietà inline modificate
+    const bg = document.querySelector('.home-hero-bg');
+    const ct = document.querySelector('.home-hero-content');
+    if (bg) bg.style.transform = '';
+    if (ct) { ct.style.transform = ''; ct.style.opacity = ''; }
+    panels.forEach(p => {
+      p.style.transform  = '';
+      p.style.opacity    = '';
+      p.style.transition = '';
+    });
+  };
+}
+
 export function renderHomeScreen() {
   const screen = document.getElementById("screen-home");
 
@@ -169,6 +267,9 @@ export function renderHomeScreen() {
     </div>
   `;
 
+  // avvia il parallax dopo che il DOM è stato scritto
+  requestAnimationFrame(initParallax);
+
   // ── CSS ────────────────────────────────────────────────────
   if (!document.getElementById('home-styles')) {
     const style = document.createElement('style');
@@ -177,9 +278,9 @@ export function renderHomeScreen() {
 
 /* ═══ ROOT ══════════════════════════════════════════════════ */
 .home-root {
-  max-width: 960px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 0 20px 60px;
+  padding: 0 32px 100px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -276,6 +377,10 @@ export function renderHomeScreen() {
   height: 100%;
   object-fit: cover;
   z-index: 0;
+  transform: scale(1.08);
+  transform-origin: center;
+  will-change: transform;
+  transition: none;
 }
 
 
@@ -298,27 +403,30 @@ export function renderHomeScreen() {
 .rules-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 120px;
   margin-bottom: 24px;
 }
 
 .rule-panel {
   display: flex;
-  min-height: 260px;
+  min-height: 340px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
   background: var(--bg-surface);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  /* stato iniziale per slide-in — impostato via JS */
+  opacity: 0;
+  will-change: opacity, transform;
 }
 .rule-panel:hover {
   border-color: var(--border-gold);
-  box-shadow: 0 4px 24px rgba(139,92,246,0.10);
+  box-shadow: 0 8px 40px rgba(110,88,89,0.14);
 }
 
 .rule-content {
   flex: 1;
-  padding: 28px 28px;
+  padding: 40px 36px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -327,7 +435,7 @@ export function renderHomeScreen() {
 
 .rule-img-wrap {
   position: relative;
-  width: 42%;
+  width: 46%;
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -338,6 +446,10 @@ export function renderHomeScreen() {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transform: scale(1.08);
+  transform-origin: center;
+  will-change: transform;
+  transition: none;
 }
 
 /* Odd: immagine destra → sfuma il bordo sinistro dell'immagine */
@@ -380,28 +492,29 @@ export function renderHomeScreen() {
 
 .rule-title {
   font-family: 'Cinzel', serif;
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--violet-bright);
-  margin: 0 0 12px;
+  margin: 0 0 16px;
+  letter-spacing: 0.04em;
 }
 
 .rule-content p {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
-  line-height: 1.6;
-  margin: 0 0 8px;
+  line-height: 1.7;
+  margin: 0 0 10px;
 }
 
 .rule-list {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
-  line-height: 1.65;
-  padding-left: 16px;
+  line-height: 1.7;
+  padding-left: 18px;
   margin: 0;
 }
 .rule-list.rule-ol { list-style-type: decimal; }
-.rule-list li { margin-bottom: 5px; }
+.rule-list li { margin-bottom: 8px; }
 .rule-list strong { color: var(--text-primary); }
 
 .win-condition {

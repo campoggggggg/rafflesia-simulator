@@ -119,7 +119,6 @@ function buildCard(d) {
   const imgSrc     = commander ? commander.image : '';
   const dateStr    = d.created_at ? timeAgo(new Date(d.created_at)) : '—';
   const tags       = (d.tags || []).filter(Boolean);
-  const totalCards = ((d.cards || []).length + (d.territory_cards || []).length + (d.sideboard_cards || []).length) + (d.commander_id ? 1 : 0);
   const cmdName    = commander ? commander.name : '—';
 
   const blurStyle = imgSrc
@@ -132,11 +131,8 @@ function buildCard(d) {
        </div>`
     : '';
 
-  const colorBadge = `<span class="pd-badge pd-badge-color" style="--pd-badge-c:${colorHex}">${esc(d.commander_color || 'colorless')}</span>`;
-  const countBadge = `<span class="pd-badge pd-badge-count">${totalCards} cards</span>`;
-
   return `
-    <div class="pd-card" data-deck-id="${esc(d.id)}">
+    <div class="pd-card" data-deck-id="${esc(d.id)}" style="--pd-cmd-color:${colorHex}">
       <div class="pd-card-img">
         <div class="pd-card-img-blur" style="${blurStyle}"></div>
         <div class="pd-card-img-overlay"></div>
@@ -146,7 +142,6 @@ function buildCard(d) {
         <div class="pd-card-info">
           <div class="pd-card-name">${esc(d.name)}</div>
           <div class="pd-card-cmd">◆ ${esc(cmdName)}</div>
-          <div class="pd-card-badges">${colorBadge}${countBadge}</div>
           <div class="pd-card-meta">${esc(d.author_username || 'Anonimo')} <span class="pd-card-dot">·</span> ${dateStr}</div>
         </div>
       </div>
@@ -742,9 +737,10 @@ function injectStyles() {
   transform-style: preserve-3d;
   will-change: transform;
 }
+/* Il colore di hover e glow viene da --pd-cmd-color impostato inline via JS */
 .pd-card:hover {
-  box-shadow: 0 14px 36px rgba(0,0,0,0.70), 0 0 0 1px rgba(95,140,95,0.35);
-  border-color: rgba(95,140,80,0.50);
+  box-shadow: 0 14px 36px rgba(0,0,0,0.70), 0 0 0 1px color-mix(in srgb, var(--pd-cmd-color, #555) 50%, transparent);
+  border-color: color-mix(in srgb, var(--pd-cmd-color, #555) 60%, transparent);
 }
 
 /* contenitore immagine — altezza fissa rettangolare */
@@ -1070,7 +1066,7 @@ function injectStyles() {
   outline: none;
 }
 
-/* ═══ RUNE BORDER — bordo runico verde al hover ══════════════ */
+/* ═══ RUNE BORDER — bordo del colore del commander al hover ═ */
 .pd-card-rune-border {
   position: absolute;
   inset: 0;
@@ -1079,41 +1075,12 @@ function injectStyles() {
   z-index: 4;
   opacity: 0;
   transition: opacity 0.22s ease, box-shadow 0.22s ease;
-  box-shadow: inset 0 0 0 1.5px rgba(95,140,80,0.0), 0 0 0 0 rgba(95,140,80,0.0);
 }
 .pd-card:hover .pd-card-rune-border {
   opacity: 1;
-  box-shadow: inset 0 0 0 1.5px rgba(95,140,80,0.55), 0 0 18px rgba(95,140,80,0.18);
-}
-
-/* ═══ BADGES colore / card count ════════════════════════════ */
-.pd-card-badges {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-  margin: 2px 0 3px;
-}
-
-.pd-badge {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  border-radius: 3px;
-  padding: 2px 6px;
-  line-height: 1.4;
-}
-
-.pd-badge-color {
-  background: color-mix(in srgb, var(--pd-badge-c, #555) 30%, transparent);
-  border: 0.5px solid color-mix(in srgb, var(--pd-badge-c, #555) 60%, transparent);
-  color: color-mix(in srgb, var(--pd-badge-c, #aaa) 80%, white 20%);
-}
-
-.pd-badge-count {
-  background: rgba(184,172,165,0.08);
-  border: 0.5px solid rgba(184,172,165,0.20);
-  color: rgba(255,255,255,0.65);
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--pd-cmd-color, #555) 55%, transparent),
+    0 0 18px color-mix(in srgb, var(--pd-cmd-color, #555) 20%, transparent);
 }
 
 /* ═══ COMMANDER NAME sotto il titolo ════════════════════════ */

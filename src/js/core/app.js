@@ -13,7 +13,7 @@ import { syncCardsFromSupabase } from '../data/cards.js';
 import { AppState } from './state.js';
 import { initSporeCanvas } from './particles.js';
 
-import { renderHomeScreen } from '../screens/home.js';
+import { renderHomeScreen, cleanupHomeParallax } from '../screens/home.js';
 import { renderPlayScreen } from '../screens/play/play-menu.js';
 import { renderDeckBuilderScreen, populateSubtypeDropdown } from '../screens/deckbuilder.js';
 import { renderSettingsScreen } from '../screens/settings.js';
@@ -37,6 +37,9 @@ function goToDeckBuilder() {
 function initNavigation() {
   document.querySelectorAll('[data-screen]').forEach(btn => {
     btn.addEventListener("click", async () => {
+      // se si sta lasciando la home, ferma il parallax
+      if (btn.dataset.screen !== "home") cleanupHomeParallax();
+
       if (btn.dataset.screen === "deckbuilder") {
         goToDeckBuilder();
         return;

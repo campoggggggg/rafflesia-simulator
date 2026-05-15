@@ -187,6 +187,13 @@ body.sim-active #topbar { display: none !important; }
 .screen        { display: none; }
 .screen.active { display: block; }
 
+/* ── Texture geometrica su tutte le schermate tranne home ─── */
+/* Griglia di punti: 32×32px, punto 1px, opacity ~4%          */
+.screen.active:not(#screen-home) {
+  background-image: radial-gradient(circle, rgba(184,172,165,0.18) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
 /* ── Padding standard per schermate non-hero ──────────────── */
 .screen-padded { padding: 32px 36px; }
 
@@ -238,13 +245,14 @@ body.sim-active #topbar { display: none !important; }
 
 .home-hero-bg {
   position: absolute;
-  inset: -12px; /* compensa il blur che crea bordi bianchi */
-  width: calc(100% + 24px);
-  height: calc(100% + 24px);
+  /* margine extra per nascondere i bordi durante il parallax */
+  inset: -20%;
+  width: 140%;
+  height: 140%;
   object-fit: cover;
   object-position: center;
   z-index: 0;
-  filter: blur(6px);
+  will-change: transform;
 }
 
 .home-hero-overlay {
@@ -263,6 +271,7 @@ body.sim-active #topbar { display: none !important; }
   position: relative;
   z-index: 2;
   text-align: center;
+  will-change: transform, opacity;
 }
 
 .home-hero-title {
