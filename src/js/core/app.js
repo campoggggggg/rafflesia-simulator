@@ -5,7 +5,7 @@
 // caricato da index.html come <script type="module">.
 // ============================================================
 
-import { navigateTo, setNavigationHistory, screenFromPath, getBasePath } from './router.js';
+import { navigateTo, setNavigationHistory, screenFromPath, getBasePath, getCurrentScreen } from './router.js';
 import { showGlobalToast, updateGlobalUI } from './ui.js';
 import { signOut, onAuthChange, ensureProfile } from '../auth/auth.js';
 import { onLoginLoadDecks, resetDecksState } from '../data/decks.js';
@@ -34,10 +34,14 @@ function goToDeckBuilder() {
   navigateTo("deckbuilder");
 }
 
+// Guard globale contro render concorrenti — previene il freeze da doppio click
+let _navigating = false;
+
 function initNavigation() {
   document.querySelectorAll('[data-screen]').forEach(btn => {
     btn.addEventListener("click", async () => {
-      // se si sta lasciando la home, ferma il parallax
+      if (_navigating) return;
+
       if (btn.dataset.screen !== "home") cleanupHomeParallax();
 
       if (btn.dataset.screen === "deckbuilder") {
@@ -45,36 +49,25 @@ function initNavigation() {
         return;
       }
 
-      if (btn.dataset.screen === "publicdeck") {
-        navigateTo("publicdeck");
-        await renderPublicDeckScreen();
-        return;
-      }
-
       if (btn.dataset.screen === "auth") {
         if (btn.id === "signInBtn" && AppState.username) {
+          _navigating = true;
           try { await signOut(); } catch (e) { console.warn("Logout:", e.message); }
+          finally { _navigating = false; }
           return;
         }
         await goToAuthScreen();
         return;
       }
 
-      if (btn.dataset.screen === "gamedesign") {
-        navigateTo("gamedesign");
-        await renderGameDesignScreen();
-        return;
-      }
-
-      if (btn.dataset.screen === "profile") {
-        navigateTo("profile");
-        await renderProfileScreen();
-        return;
-      }
-
-      if (btn.dataset.screen === "match") {
-        navigateTo("match");
-        await renderMatchScreen();
+      // Schermate con render asincrono — navigateTo prima, poi render
+      const asyncScreens = { publicdeck: renderPublicDeckScreen, gamedesign: renderGameDesignScreen, profile: renderProfileScreen, match: renderMatchScreen };
+      if (asyncScreens[btn.dataset.screen]) {
+        _navigating = true;
+        navigateTo(btn.dataset.screen);
+        try { await asyncScreens[btn.dataset.screen](); }
+        catch (e) { console.error(`render ${btn.dataset.screen}:`, e); }
+        finally { _navigating = false; }
         return;
       }
 
@@ -85,10 +78,27 @@ function initNavigation() {
 
 const ADMIN_USERNAMES = ['camposssssss', 'gyomber', 'skyness'];
 
-function updateGameDesignNavVisibility(username) {
-  const btn = document.getElementById('gameDesignBtn');
-  if (!btn) return;
-  btn.style.display = username && ADMIN_USERNAMES.includes(username) ? '' : 'none';
+function updateAdminNavVisibility(username) {
+  const isAdmin = username && ADMIN_USERNAMES.includes(username);
+  const gameDesignBtn = document.getElementById('gameDesignBtn');
+  const matchBtn      = document.getElementById('matchNavBtn');
+  if (gameDesignBtn) gameDesignBtn.style.display = isAdmin ? '' : 'none';
+  if (matchBtn)      matchBtn.style.display      = isAdmin ? '' : 'none';
+}
+
+// alias per compatibilità con chiamate esistenti
+const updateGameDesignNavVisibility = updateAdminNavVisibility;
+
+function initButtonPressEffect() {
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    btn.classList.remove('btn-pressed');
+    // forza reflow per riavviare l'animazione se cliccato di nuovo
+    void btn.offsetWidth;
+    btn.classList.add('btn-pressed');
+    btn.addEventListener('animationend', () => btn.classList.remove('btn-pressed'), { once: true });
+  }, { passive: true });
 }
 
 function initTopbar() {
@@ -110,6 +120,7 @@ function initTopbar() {
 async function initApp() {
   initNavigation();
   initTopbar();
+  initButtonPressEffect();
 
   try { renderHomeScreen(); } catch (e) { console.error("renderHomeScreen:", e); }
   try { renderPlayScreen(); } catch (e) { console.error("renderPlayScreen:", e); }
@@ -161,9 +172,16 @@ async function initApp() {
       _initialAuthHandled = true;
       AppState.username = "";
       resetDecksState();
-      await renderDeckBuilderScreen();
-      updateGameDesignNavVisibility("");
+      // aggiorna subito la UI topbar prima di tutto il resto
       updateGlobalUI(null);
+      updateAdminNavVisibility("");
+      await renderDeckBuilderScreen();
+      // re-render profilo in modo che mostri "Accedi" se si torna sulla schermata
+      try { await renderProfileScreen(); } catch (_) {}
+      // se ero su una schermata protetta, torna alla home
+      if (['profile', 'deckbuilder', 'settings'].includes(getCurrentScreen())) {
+        navigateTo("home");
+      }
     }
   });
 

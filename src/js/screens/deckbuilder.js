@@ -460,8 +460,11 @@ function renderDeckPanel() {
         ${mkSection(`MINION <span class="db-cnt">${deck.cards.filter(id => { const c=CardMap.get(id); return c&&c.type==='Minion'; }).length}</span>`, cardGroup(groups.Minion || {}, 'main'))}
         ${mkSection(`SIDEBOARD <span class="db-cnt">${deck.sideboardCards.length}/${MAX_SIDE}</span>`, cardGroup(side, 'side'))}
         <div class="db-leg-badge-row">
-          <span class="db-leg-badge" title="Legendary nel main deck">◆ <span class="db-leg-n">main</span> ${legMain}</span>
-          <span class="db-leg-badge" title="Legendary nella sideboard">◆ <span class="db-leg-n">side</span> ${legSide}</span>
+          <span class="db-main-count-badge" title="Carte nel main deck">
+            <span class="db-leg-n">main</span> ${deck.cards.length}<span class="db-leg-n">/${MAX_MAIN}</span>
+          </span>
+          <span class="db-leg-badge" title="Legendary nel main deck">◆ <span class="db-leg-n">leg main</span> ${legMain}</span>
+          <span class="db-leg-badge" title="Legendary nella sideboard">◆ <span class="db-leg-n">leg side</span> ${legSide}</span>
         </div>
       </div>
     </div>
@@ -539,7 +542,12 @@ function commanderRow(deck) {
 }
 
 function cardGroup(group, slot) {
-  const ids = Object.keys(group);
+  const ids = Object.keys(group).sort((a, b) => {
+    const ca = CardMap.get(a), cb = CardMap.get(b);
+    const costA = ((ca?.cost_neutral ?? 0) + (ca?.cost_color ?? 0));
+    const costB = ((cb?.cost_neutral ?? 0) + (cb?.cost_color ?? 0));
+    return costA - costB;
+  });
   if (!ids.length) return `<div class="db-empty">—</div>`;
   return ids.map(id => {
     const c = CardMap.get(id);

@@ -9,6 +9,7 @@ import { getUser }      from '../auth/auth.js';
 import { navigateTo }   from '../core/router.js';
 import { saveDeckToSupabase } from '../data/decks.js';
 import { showGlobalToast }    from '../core/ui.js';
+import { openPublicProfile }  from './profile.js';
 
 // ── Costanti colore commander (stesse del deckbuilder) ────────
 const COLOR_HEX = {
@@ -24,6 +25,7 @@ let _filters = { name: '', colors: [], tags: '' };
 let _orderBy = 'date';
 let _orderDir = 'desc';
 let _decks = [];
+let _avatarMap = {}; // userId → avatar_url
 
 // ─────────────────────────────────────────────────────────────
 // RENDER PRINCIPALE
@@ -62,6 +64,18 @@ async function loadAndRender() {
     if (error) throw error;
 
     _decks = data || [];
+
+    // fetch avatar degli autori in batch
+    const authorIds = [...new Set(_decks.map(d => d.author_user_id).filter(Boolean))];
+    if (authorIds.length) {
+      const { data: profiles } = await db
+        .from('profiles')
+        .select('id, avatar_url')
+        .in('id', authorIds);
+      _avatarMap = {};
+      (profiles || []).forEach(p => { if (p.avatar_url) _avatarMap[p.id] = p.avatar_url; });
+    }
+
     renderGrid(_applyClientFilters(_decks));
   } catch (err) {
     console.warn('Errore caricamento public decks:', err.message);
@@ -96,6 +110,15 @@ function renderGrid(decks) {
     el.addEventListener('click', () => onCardClick(el.dataset.deckId));
     wireTilt(el);
   });
+
+  // username cliccabile → profilo pubblico
+  grid.querySelectorAll('.pd-author-link').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      const userId = el.dataset.userId;
+      if (userId) openPublicProfile(userId);
+    });
+  });
 }
 
 /* 3D tilt su hover — CSS transform, nessuna libreria */
@@ -120,16 +143,20 @@ function buildCard(d) {
   const dateStr    = d.created_at ? timeAgo(new Date(d.created_at)) : '—';
   const tags       = (d.tags || []).filter(Boolean);
   const cmdName    = commander ? commander.name : '—';
+  const authorName = d.author_username || 'Anonimo';
+  const avatarUrl  = d.author_user_id ? (_avatarMap[d.author_user_id] || '') : '';
 
   const blurStyle = imgSrc
     ? `background-image: url('${imgSrc}'); background-size: 140%; background-position: center 5%;`
     : `background: ${colorHex};`;
 
   const tagsHtml = tags.length
-    ? `<div class="pd-card-tags">
-         ${tags.map(t => `<span class="pd-tag">${esc(t)}</span>`).join('')}
-       </div>`
+    ? `<div class="pd-card-tags">${tags.map(t => `<span class="pd-tag">${esc(t)}</span>`).join('')}</div>`
     : '';
+
+  const avatarHtml = avatarUrl
+    ? `<img class="pd-author-avatar" src="${esc(avatarUrl)}" alt="">`
+    : `<span class="pd-author-avatar pd-author-avatar-ph">${authorName[0].toUpperCase()}</span>`;
 
   return `
     <div class="pd-card" data-deck-id="${esc(d.id)}" style="--pd-cmd-color:${colorHex}">
@@ -142,7 +169,11 @@ function buildCard(d) {
         <div class="pd-card-info">
           <div class="pd-card-name">${esc(d.name)}</div>
           <div class="pd-card-cmd">◆ ${esc(cmdName)}</div>
-          <div class="pd-card-meta">${esc(d.author_username || 'Anonimo')} <span class="pd-card-dot">·</span> ${dateStr}</div>
+          <div class="pd-card-meta">
+            ${avatarHtml}
+            <span class="pd-author-link" data-user-id="${esc(d.author_user_id || '')}">${esc(authorName)}</span>
+            <span class="pd-card-dot">·</span> ${dateStr}
+          </div>
         </div>
       </div>
     </div>`;
@@ -747,7 +778,7 @@ function injectStyles() {
 .pd-card-img {
   position: relative;
   width: 100%;
-  height: 180px;
+  height: 220px;
   background-size: cover;
   background-position: center center;
   background-color: var(--bg-elevated);
@@ -809,7 +840,46 @@ function injectStyles() {
   font-size: 13px;
   color: rgba(255,255,255,0.75);
   text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
 }
+
+/* avatar autore — piccolo cerchio */
+.pd-author-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+.pd-author-avatar-ph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 1px solid rgba(255,255,255,0.2);
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+  flex-shrink: 0;
+}
+
+/* username cliccabile */
+.pd-author-link {
+  cursor: pointer;
+  color: rgba(255,255,255,0.85);
+  text-decoration: underline;
+  text-decoration-color: rgba(255,255,255,0.25);
+  text-underline-offset: 2px;
+  transition: color 0.15s;
+}
+.pd-author-link:hover { color: #fff; text-decoration-color: rgba(255,255,255,0.7); }
 
 .pd-card-dot {
   color: rgba(255,255,255,0.4);

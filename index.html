@@ -41,17 +41,17 @@
               <button class="topbar-dropdown-item" data-screen="publicdeck">Public Decks</button>
               <button class="topbar-dropdown-item" data-screen="deckbuilder">Deck Builder</button>
               <button class="topbar-dropdown-item" data-screen="advancedsearch">Advanced Search</button>
-              <button class="topbar-dropdown-item" data-screen="match">Match</button>
+              <button class="topbar-dropdown-item" data-screen="match" id="matchNavBtn" style="display:none">Match</button>
               <button class="topbar-dropdown-item" data-screen="gamedesign" id="gameDesignBtn" style="display:none">Game Design</button>
             </div>
           </div>
           <button class="topbar-nav-btn" data-screen="play">Play</button>
-          <button class="topbar-nav-btn" data-screen="profile" id="profileNavBtn" style="display:none">Profile</button>
         </nav>
       </div>
 
       <!-- RIGHT: auth + icone -->
       <div class="topbar-right">
+        <button class="topbar-text-btn" data-screen="profile" id="profileNavBtn" style="display:none">Profile</button>
         <button class="topbar-text-btn" data-screen="auth" id="signInBtn">Sign In</button>
         <button class="topbar-text-btn topbar-register-btn" data-screen="auth" id="registerBtn">Register</button>
         <button class="topbar-icon-btn" id="darkModeBtn" title="Toggle dark/light mode">

@@ -17,18 +17,16 @@ function applyUserToUI(user) {
 
   const signInBtn   = document.getElementById("signInBtn");
   const registerBtn = document.getElementById("registerBtn");
-  if (!signInBtn || !registerBtn) return;
-
-  const profileBtn = document.getElementById("profileNavBtn");
+  const profileBtn  = document.getElementById("profileNavBtn");
 
   if (user) {
-    signInBtn.textContent = `${AppState.username} · Sign Out`;
-    registerBtn.style.display = "none";
-    if (profileBtn) profileBtn.style.display = "";
+    if (signInBtn)   signInBtn.textContent    = `${AppState.username} · Sign Out`;
+    if (registerBtn) registerBtn.style.display = "none";
+    if (profileBtn)  profileBtn.style.display  = "";
   } else {
-    signInBtn.textContent = "Sign In";
-    registerBtn.style.display = "";
-    if (profileBtn) profileBtn.style.display = "none";
+    if (signInBtn)   signInBtn.textContent    = "Sign In";
+    if (registerBtn) registerBtn.style.display = "";
+    if (profileBtn)  profileBtn.style.display  = "none";
   }
 }
 

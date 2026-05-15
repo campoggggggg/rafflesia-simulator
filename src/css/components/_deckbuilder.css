@@ -745,6 +745,21 @@ select.db-fi     { padding: 3px 5px; background: var(--bg-base); }
   padding: 8px 12px 6px;
   border-top: 1px solid var(--border);
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.db-main-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+  background: rgba(47,58,52,0.55);
+  border: 0.5px solid var(--accent-forest);
+  border-radius: 4px;
+  padding: 3px 8px;
 }
 
 .db-leg-badge {
