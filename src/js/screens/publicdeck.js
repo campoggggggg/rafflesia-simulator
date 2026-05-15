@@ -107,12 +107,16 @@ function renderGrid(decks) {
   grid.innerHTML = decks.map(d => buildCard(d)).join('');
 
   grid.querySelectorAll('.pd-card').forEach(el => {
-    el.addEventListener('click', () => onCardClick(el.dataset.deckId));
+    // ignora click su elementi che hanno una loro azione
+    el.addEventListener('click', e => {
+      if (e.target.closest('.pd-author-zone')) return;
+      onCardClick(el.dataset.deckId);
+    });
     wireTilt(el);
   });
 
-  // username cliccabile → profilo pubblico
-  grid.querySelectorAll('.pd-author-link').forEach(el => {
+  // username + avatar cliccabili → profilo pubblico
+  grid.querySelectorAll('.pd-author-zone').forEach(el => {
     el.addEventListener('click', e => {
       e.stopPropagation();
       const userId = el.dataset.userId;
@@ -154,7 +158,8 @@ function buildCard(d) {
     ? `<div class="pd-card-tags">${tags.map(t => `<span class="pd-tag">${esc(t)}</span>`).join('')}</div>`
     : '';
 
-  const avatarHtml = avatarUrl
+  const uid = esc(d.author_user_id || '');
+  const avatarInner = avatarUrl
     ? `<img class="pd-author-avatar" src="${esc(avatarUrl)}" alt="">`
     : `<span class="pd-author-avatar pd-author-avatar-ph">${authorName[0].toUpperCase()}</span>`;
 
@@ -170,8 +175,7 @@ function buildCard(d) {
           <div class="pd-card-name">${esc(d.name)}</div>
           <div class="pd-card-cmd">◆ ${esc(cmdName)}</div>
           <div class="pd-card-meta">
-            ${avatarHtml}
-            <span class="pd-author-link" data-user-id="${esc(d.author_user_id || '')}">${esc(authorName)}</span>
+            <span class="pd-author-zone" data-user-id="${uid}">${avatarInner}<span class="pd-author-name">${esc(authorName)}</span></span>
             <span class="pd-card-dot">·</span> ${dateStr}
           </div>
         </div>
@@ -846,6 +850,21 @@ function injectStyles() {
   flex-wrap: wrap;
 }
 
+/* zona autore cliccabile (avatar + nome) */
+.pd-author-zone {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 20px;
+  padding: 1px 6px 1px 1px;
+  transition: background 0.15s;
+}
+.pd-author-zone:hover {
+  background: rgba(255,255,255,0.12);
+}
+
 /* avatar autore — piccolo cerchio */
 .pd-author-avatar {
   width: 20px;
@@ -853,7 +872,8 @@ function injectStyles() {
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
-  border: 1px solid rgba(255,255,255,0.25);
+  border: 1px solid rgba(255,255,255,0.30);
+  display: block;
 }
 .pd-author-avatar-ph {
   display: inline-flex;
@@ -862,24 +882,19 @@ function injectStyles() {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: var(--bg-elevated);
-  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(47,58,52,0.8);
+  border: 1px solid rgba(255,255,255,0.25);
   font-size: 9px;
   font-weight: 700;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255,255,255,0.85);
   flex-shrink: 0;
 }
 
-/* username cliccabile */
-.pd-author-link {
-  cursor: pointer;
-  color: rgba(255,255,255,0.85);
-  text-decoration: underline;
-  text-decoration-color: rgba(255,255,255,0.25);
-  text-underline-offset: 2px;
-  transition: color 0.15s;
+.pd-author-name {
+  color: rgba(255,255,255,0.90);
+  font-size: 13px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
 }
-.pd-author-link:hover { color: #fff; text-decoration-color: rgba(255,255,255,0.7); }
 
 .pd-card-dot {
   color: rgba(255,255,255,0.4);
