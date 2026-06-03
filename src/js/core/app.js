@@ -169,6 +169,12 @@ async function initApp() {
 
   let _initialAuthHandled = false;
 
+  // Carica le carte prima di registrare onAuthChange, così renderDeckBuilderScreen
+  // le trova già disponibili quando scatta INITIAL_SESSION.
+  await syncCardsFromSupabase();
+  renderCardList();
+  populateSubtypeDropdown();
+
   onAuthChange(async (event, user) => {
     if (user && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
       AppState.username = user.user_metadata?.username || user.email?.split("@")[0] || "";
@@ -176,7 +182,11 @@ async function initApp() {
       try { await onLoginLoadDecks(); }        catch (e) { console.error("onLoginLoadDecks:", e); }
       try { await renderDeckBuilderScreen(); } catch (e) { console.error("renderDeckBuilderScreen:", e); }
       try { renderPlayScreen(); }              catch (e) { console.error("renderPlayScreen:", e); }
-      try { await renderGameDesignScreen(); }  catch (e) { console.error("renderGameDesignScreen:", e); }
+      // renderGameDesignScreen è una lazy screen pesante: la rendiamo solo per gli admin
+      const isAdmin = ADMIN_USERNAMES.includes(AppState.username.toLowerCase());
+      if (isAdmin) {
+        try { await renderGameDesignScreen(); } catch (e) { console.error("renderGameDesignScreen:", e); }
+      }
       updateGameDesignNavVisibility(AppState.username);
       updateGlobalUI(user);
       if (event === "SIGNED_IN" && _initialAuthHandled) {
@@ -192,8 +202,6 @@ async function initApp() {
       updateGlobalUI(null);
       updateAdminNavVisibility("");
       try { await renderDeckBuilderScreen(); } catch (e) { console.error("renderDeckBuilderScreen:", e); }
-      // re-render profilo in modo che mostri "Accedi" se si torna sulla schermata
-      try { await renderProfileScreen(); } catch (_) {}
       // se era un logout esplicito, porta alla schermata di login
       if (event === "SIGNED_OUT") {
         await goToAuthScreen();
@@ -202,10 +210,6 @@ async function initApp() {
       }
     }
   });
-
-  await syncCardsFromSupabase();
-  renderCardList();          // aggiorna la lista carte dopo che il DB è caricato
-  populateSubtypeDropdown();
 }
 
 initApp();
