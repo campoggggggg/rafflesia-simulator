@@ -172,11 +172,11 @@ async function initApp() {
   onAuthChange(async (event, user) => {
     if (user && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
       AppState.username = user.user_metadata?.username || user.email?.split("@")[0] || "";
-      await ensureProfile(user);
-      await onLoginLoadDecks();
-      await renderDeckBuilderScreen();
-      renderPlayScreen();
-      await renderGameDesignScreen();
+      try { await ensureProfile(user); }       catch (e) { console.error("ensureProfile:", e); }
+      try { await onLoginLoadDecks(); }        catch (e) { console.error("onLoginLoadDecks:", e); }
+      try { await renderDeckBuilderScreen(); } catch (e) { console.error("renderDeckBuilderScreen:", e); }
+      try { renderPlayScreen(); }              catch (e) { console.error("renderPlayScreen:", e); }
+      try { await renderGameDesignScreen(); }  catch (e) { console.error("renderGameDesignScreen:", e); }
       updateGameDesignNavVisibility(AppState.username);
       updateGlobalUI(user);
       if (event === "SIGNED_IN" && _initialAuthHandled) {
@@ -191,11 +191,13 @@ async function initApp() {
       // aggiorna subito la UI topbar prima di tutto il resto
       updateGlobalUI(null);
       updateAdminNavVisibility("");
-      await renderDeckBuilderScreen();
+      try { await renderDeckBuilderScreen(); } catch (e) { console.error("renderDeckBuilderScreen:", e); }
       // re-render profilo in modo che mostri "Accedi" se si torna sulla schermata
       try { await renderProfileScreen(); } catch (_) {}
-      // se ero su una schermata protetta, torna alla home
-      if (['profile', 'deckbuilder', 'settings'].includes(getCurrentScreen())) {
+      // se era un logout esplicito, porta alla schermata di login
+      if (event === "SIGNED_OUT") {
+        await goToAuthScreen();
+      } else if (['profile', 'deckbuilder', 'settings'].includes(getCurrentScreen())) {
         navigateTo("home");
       }
     }

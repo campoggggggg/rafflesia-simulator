@@ -3,7 +3,12 @@
     "allow": [
       "Bash(git -C \"c:/Users/gabri/OneDrive/Desktop/repository github/rafflesia-simulator\" ls-files src/css/)",
       "Bash(git push *)",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(git -C /home/campog/rafflesia/rafflesia-simulator show fdae8e1 -- src/js/auth/auth-screen.js src/js/core/app.js)",
+      "Bash(python3 -m playwright --version)",
+      "Bash(python3 -c \"import playwright\")",
+      "Bash(pip3 install *)",
+      "Bash(python3 -m playwright install chromium)"
     ]
   }
 }
