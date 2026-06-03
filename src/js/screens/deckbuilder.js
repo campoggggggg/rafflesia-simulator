@@ -697,6 +697,12 @@ export function renderCardList() {
     });
     row.addEventListener('mouseleave', hideTooltip);
   });
+
+  // Preload immagini delle carte visibili in background.
+  // setTimeout(0) lascia completare il repaint del DOM prima di avviare i download.
+  setTimeout(() => {
+    cards.forEach(c => { new Image().src = c.image; });
+  }, 0);
 }
 
 // ─────────────────────────────────────────────────────────────
