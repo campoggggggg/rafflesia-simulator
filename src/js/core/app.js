@@ -11,7 +11,6 @@ import { signOut, onAuthChange, ensureProfile } from '../auth/auth.js';
 import { onLoginLoadDecks, resetDecksState } from '../data/decks.js';
 import { syncCardsFromSupabase } from '../data/cards.js';
 import { AppState } from './state.js';
-import { initSporeCanvas } from './particles.js';
 
 import { renderHomeScreen, cleanupHomeParallax } from '../screens/home.js';
 import { renderPlayScreen } from '../screens/play/play-menu.js';
@@ -201,8 +200,6 @@ async function initApp() {
       }
     }
   });
-
-  initSporeCanvas();
 
   await syncCardsFromSupabase();
   populateSubtypeDropdown();
