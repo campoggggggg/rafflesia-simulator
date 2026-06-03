@@ -12,6 +12,11 @@ import {
 } from './deckbuilder-export.js';
 import { openDialog, closeDialog, onPublish } from './deckbuilder-dialog.js';
 
+// ── Preload image cache ───────────────────────────────────────
+// Mappa url → Image object. Tenerli qui impedisce il GC (Firefox
+// cancella le richieste degli Image non referenziati).
+const _preloadCache = new Map();
+
 // ── Stato modulo ──────────────────────────────────────────────
 let addMode  = 'main'; // 'main' | 'side'
 let orderBy  = 'name-asc';
@@ -698,11 +703,16 @@ export function renderCardList() {
     row.addEventListener('mouseleave', hideTooltip);
   });
 
-  // Preload immagini delle carte visibili in background.
-  // setTimeout(0) lascia completare il repaint del DOM prima di avviare i download.
-  setTimeout(() => {
-    cards.forEach(c => { new Image().src = c.image; });
-  }, 0);
+  // Preload immagini visibili: tengo i riferimenti in _preloadCache per evitare
+  // il GC (Firefox cancella le richieste se l'Image object non è referenziato).
+  // decode() pre-decodifica il PNG in background così il tooltip è istantaneo.
+  cards.forEach(c => {
+    if (_preloadCache.has(c.image)) return;
+    const img = new Image();
+    img.src = c.image;
+    img.decode().catch(() => {});
+    _preloadCache.set(c.image, img);
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
