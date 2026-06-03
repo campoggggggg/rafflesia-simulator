@@ -661,7 +661,7 @@ function getSorted(cards) {
   });
 }
 
-function renderCardList() {
+export function renderCardList() {
   const list = document.getElementById('db-card-list');
   if (!list) return;
   const deck  = getCurrentDeck();

@@ -14,7 +14,7 @@ import { AppState } from './state.js';
 
 import { renderHomeScreen, cleanupHomeParallax } from '../screens/home.js';
 import { renderPlayScreen } from '../screens/play/play-menu.js';
-import { renderDeckBuilderScreen, populateSubtypeDropdown } from '../screens/deckbuilder.js';
+import { renderDeckBuilderScreen, populateSubtypeDropdown, renderCardList } from '../screens/deckbuilder.js';
 import { renderSettingsScreen } from '../screens/settings.js';
 import { renderAuthScreen } from '../auth/auth-screen.js';
 import { renderAdvancedSearchScreen } from '../screens/advancedsearch/index.js';
@@ -202,6 +202,7 @@ async function initApp() {
   });
 
   await syncCardsFromSupabase();
+  renderCardList();          // aggiorna la lista carte dopo che il DB è caricato
   populateSubtypeDropdown();
 }
 

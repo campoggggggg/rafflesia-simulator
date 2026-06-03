@@ -105,7 +105,7 @@ export function renderAuthScreen() {
           </div>
 
           <p class="auth-msg" id="registerMsg" style="min-height:18px; margin-bottom:8px;"></p>
-          <button class="auth-btn-primary" id="registerBtn" disabled>Create account</button>
+          <button class="auth-btn-primary" id="registerFormBtn" disabled>Create account</button>
           <button class="auth-btn-secondary" id="backToLoginBtn">Back to Login</button>
         </div>
 
@@ -144,7 +144,7 @@ export function renderAuthScreen() {
   // Register validation state
   const validity = { username: false, password: false, confirm: false };
   function updateRegisterBtn() {
-    document.getElementById("registerBtn").disabled =
+    document.getElementById("registerFormBtn").disabled =
       !(validity.username && validity.password && validity.confirm);
   }
 
@@ -255,12 +255,12 @@ export function renderAuthScreen() {
   };
 
   // REGISTER
-  document.getElementById("registerBtn").onclick = async () => {
+  document.getElementById("registerFormBtn").onclick = async () => {
     const username = document.getElementById("regUsername").value.trim();
     const email    = document.getElementById("regEmail").value.trim();
     const password = document.getElementById("regPassword").value;
     const msg      = document.getElementById("registerMsg");
-    const btn      = document.getElementById("registerBtn");
+    const btn      = document.getElementById("registerFormBtn");
 
     msg.className   = "auth-msg";
     msg.textContent = "";
