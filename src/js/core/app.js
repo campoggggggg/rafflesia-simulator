@@ -36,6 +36,13 @@ function goToDeckBuilder() {
 
 // Guard globale contro render concorrenti — previene il freeze da doppio click
 let _navigating = false;
+let _navTimeout = null;
+
+function _setNavigating(on) {
+  _navigating = on;
+  clearTimeout(_navTimeout);
+  if (on) _navTimeout = setTimeout(() => { _navigating = false; }, 5000);
+}
 
 function initNavigation() {
   document.querySelectorAll('[data-screen]').forEach(btn => {
@@ -51,9 +58,9 @@ function initNavigation() {
 
       if (btn.dataset.screen === "auth") {
         if (btn.id === "signInBtn" && AppState.username) {
-          _navigating = true;
+          _setNavigating(true);
           try { await signOut(); } catch (e) { console.warn("Logout:", e.message); }
-          finally { _navigating = false; }
+          finally { _setNavigating(false); }
           return;
         }
         await goToAuthScreen();
@@ -63,11 +70,11 @@ function initNavigation() {
       // Schermate con render asincrono — navigateTo prima, poi render
       const asyncScreens = { publicdeck: renderPublicDeckScreen, gamedesign: renderGameDesignScreen, profile: renderProfileScreen, match: renderMatchScreen };
       if (asyncScreens[btn.dataset.screen]) {
-        _navigating = true;
+        _setNavigating(true);
         navigateTo(btn.dataset.screen);
         try { await asyncScreens[btn.dataset.screen](); }
         catch (e) { console.error(`render ${btn.dataset.screen}:`, e); }
-        finally { _navigating = false; }
+        finally { _setNavigating(false); }
         return;
       }
 
@@ -122,16 +129,14 @@ async function initApp() {
   initTopbar();
   initButtonPressEffect();
 
+  // Screen leggeri: renderizzati subito
   try { renderHomeScreen(); } catch (e) { console.error("renderHomeScreen:", e); }
   try { renderPlayScreen(); } catch (e) { console.error("renderPlayScreen:", e); }
   try { renderDeckBuilderScreen(); } catch (e) { console.error("renderDeckBuilderScreen:", e); }
   try { renderSettingsScreen(); } catch (e) { console.error("renderSettingsScreen:", e); }
   try { renderAuthScreen(); } catch (e) { console.error("renderAuthScreen:", e); }
   try { renderAdvancedSearchScreen(); } catch (e) { console.error("renderAdvancedSearchScreen:", e); }
-  try { await renderPublicDeckScreen(); } catch (e) { console.error("renderPublicDeckScreen:", e); }
-  try { renderGameDesignScreen(); } catch (e) { console.error("renderGameDesignScreen:", e); }
-  try { await renderProfileScreen(); } catch (e) { console.error("renderProfileScreen:", e); }
-  try { await renderMatchScreen(); } catch (e) { console.error("renderMatchScreen:", e); }
+  // publicdeck, gamedesign, profile, match: renderizzati la prima volta che l'utente ci naviga
 
   document.body.classList.toggle("theme-light", AppState.settings.theme === "light");
 
@@ -150,6 +155,18 @@ async function initApp() {
   setNavigationHistory([startScreen]);
   history.replaceState({ screen: startScreen }, "", location.pathname);
   navigateTo(startScreen, false);
+
+  // Se l'utente arriva direttamente su uno screen lazy (es. /profile via URL),
+  // lo renderizziamo subito senza aspettare la navigazione manuale.
+  const _lazyRenders = {
+    publicdeck: renderPublicDeckScreen,
+    gamedesign: renderGameDesignScreen,
+    profile:    renderProfileScreen,
+    match:      renderMatchScreen,
+  };
+  if (_lazyRenders[startScreen]) {
+    try { await _lazyRenders[startScreen](); } catch (e) { console.error(`render initial ${startScreen}:`, e); }
+  }
 
   let _initialAuthHandled = false;
 

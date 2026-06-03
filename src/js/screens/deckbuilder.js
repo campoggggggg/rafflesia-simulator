@@ -814,15 +814,23 @@ export async function populateSubtypeDropdown() {
 function onNew() {
   openDialog('Nome del nuovo mazzo:', '', async name => {
     if (!name.trim()) return;
-    const d = {
-      id: Date.now(), name: name.trim(),
-      commanderId: null, cards: [], territoryCards: [], sideboardCards: [],
-    };
-    AppState.decks.push(d);
-    AppState.currentDeckId = d.id;
-    await saveDeckToSupabase(d);   // Supabase aggiorna d.id con l'UUID reale
-    AppState.currentDeckId = d.id; // sincronizza dopo che d.id è cambiato
-    await renderDeckBuilderScreen();
+    const btn = document.getElementById('db-new');
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    try {
+      const d = {
+        id: Date.now(), name: name.trim(),
+        commanderId: null, cards: [], territoryCards: [], sideboardCards: [],
+      };
+      AppState.decks.push(d);
+      AppState.currentDeckId = d.id;
+      await saveDeckToSupabase(d);   // Supabase aggiorna d.id con l'UUID reale
+      AppState.currentDeckId = d.id; // sincronizza dopo che d.id è cambiato
+      await renderDeckBuilderScreen();
+    } catch (e) {
+      console.error('onNew:', e);
+      showToast('Errore nella creazione del mazzo.');
+      if (btn) { btn.disabled = false; btn.textContent = '+ new'; }
+    }
   });
 }
 
@@ -833,23 +841,27 @@ function onDelete() {
   }
   const deck = getCurrentDeck();
   openDialog(`Eliminare il mazzo "${esc(deck.name)}"?`, null, async () => {
-    const deleted = AppState.decks.find(d => String(d.id) === String(AppState.currentDeckId));
+    const deleted  = AppState.decks.find(d => String(d.id) === String(AppState.currentDeckId));
     const remaining = AppState.decks.filter(d => String(d.id) !== String(AppState.currentDeckId));
     AppState.decks         = remaining;
     AppState.currentDeckId = remaining[0].id;
-    if (deleted) await deleteDeckFromSupabase(deleted).catch(() => {});
-    renderDeckBuilderScreen();
+    try {
+      if (deleted) await deleteDeckFromSupabase(deleted);
+    } catch (e) {
+      console.warn('deleteDeck:', e);
+    }
+    await renderDeckBuilderScreen();
   });
 }
 
 function onRename() {
   const deck = getCurrentDeck();
-  openDialog('Rinomina mazzo:', deck.name, name => {
+  openDialog('Rinomina mazzo:', deck.name, async name => {
     if (!name.trim()) return;
     deck.name = name.trim();
-    saveDecks();
     const lbl = document.getElementById('db-sel-label');
     if (lbl) lbl.textContent = deck.name;
+    saveDecks();
   });
 }
 

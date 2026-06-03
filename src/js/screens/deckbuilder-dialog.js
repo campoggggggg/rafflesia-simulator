@@ -25,9 +25,9 @@ export function openDialog(msg, inputDefault, onOk) {
   inp.value          = inputDefault ?? '';
   overlay.classList.remove('hidden');
 
-  document.getElementById('db-dlg-ok').onclick = () => { closeDialog(); onOk(inp.value); };
-  inp.onkeydown = e => {
-    if (e.key === 'Enter')  { closeDialog(); onOk(inp.value); }
+  document.getElementById('db-dlg-ok').onclick = async () => { closeDialog(); await onOk(inp.value); };
+  inp.onkeydown = async e => {
+    if (e.key === 'Enter')  { closeDialog(); await onOk(inp.value); }
     if (e.key === 'Escape') closeDialog();
   };
   if (inputDefault !== null) setTimeout(() => { inp.focus(); inp.select(); }, 30);
