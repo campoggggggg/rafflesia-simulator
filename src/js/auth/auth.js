@@ -5,6 +5,11 @@
 import { db } from '../core/supabase-client.js';
 import { AppState } from '../core/state.js';
 
+// Utente corrente — aggiornato da onAuthChange che è sempre il primo
+// ad essere notificato da Supabase. Questo rende getUser() affidabile
+// indipendentemente da dove Supabase ha salvato i token (localStorage vs sessionStorage).
+let _currentUser = undefined; // undefined = non ancora inizializzato
+
 // Controlla se uno username è già preso (query pubblica su profiles).
 // Restituisce true se disponibile, false se già usato.
 export async function isUsernameAvailable(username) {
@@ -97,15 +102,20 @@ export async function signOut() {
 }
 
 export async function getUser() {
-  // getSession() reads the in-memory/local session without a network request.
-  // getUser() would validate the JWT server-side and can fail on network issues.
+  // Se onAuthChange ha già sparato almeno una volta, ritorna il valore in cache.
+  // Questo è sempre in sync con lo stato UI (che usa lo stesso callback).
+  if (_currentUser !== undefined) return _currentUser;
+  // Fallback solo per chiamate prima che onAuthChange abbia inizializzato il cache.
   const { data: { session } } = await db.auth.getSession();
   return session?.user ?? null;
 }
 
 export function onAuthChange(callback) {
   const { data: { subscription } } = db.auth.onAuthStateChange(
-    (event, session) => callback(event, session?.user ?? null)
+    (event, session) => {
+      _currentUser = session?.user ?? null;
+      callback(event, _currentUser);
+    }
   );
   return () => subscription.unsubscribe();
 }
@@ -118,9 +128,9 @@ export async function saveSettingsToCloud(settings) {
 }
 
 export async function loadSettingsFromCloud() {
-  const { data: { session } } = await db.auth.getSession();
-  if (!session?.user) return null;
-  return session.user.user_metadata?.rafflesia_settings ?? null;
+  const user = await getUser();
+  if (!user) return null;
+  return user.user_metadata?.rafflesia_settings ?? null;
 }
 
 export function saveSettings() {
