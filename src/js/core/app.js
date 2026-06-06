@@ -191,7 +191,7 @@ async function initApp() {
       }
       updateGameDesignNavVisibility(AppState.username);
       updateGlobalUI(user);
-      if (event === "SIGNED_IN" && _initialAuthHandled) {
+      if (event === "SIGNED_IN" && _initialAuthHandled && getCurrentScreen() === "auth") {
         showGlobalToast(`Welcome back to Rafflesia, ${AppState.username}.`, "success");
         navigateTo("home");
       }

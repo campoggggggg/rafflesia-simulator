@@ -233,20 +233,21 @@ function openDeckModal(deck, user) {
     ? `<button class="pdm-btn pdm-btn-danger" id="pdm-delete">Rimuovi pubblicazione</button>`
     : '';
 
-  const renameBtn = isOwner
-    ? `<button class="pdm-btn" id="pdm-rename">Modifica nome</button>`
-    : '';
+  const showDescPanel = !!(deck.description || isOwner);
 
   const overlay = document.createElement('div');
   overlay.className = 'pdm-overlay';
   overlay.id = 'pdm-overlay';
   overlay.innerHTML = `
-    <div class="pdm-modal ${deck.description ? 'pdm-modal--with-desc' : ''}">
+    <div class="pdm-modal ${showDescPanel ? 'pdm-modal--with-desc' : ''}">
       <div class="pdm-header" style="--pdm-color:${colorHex}">
         <div class="pdm-header-bg" ${commander?.image ? `style="background-image:url('${commander.image}')"` : ''}></div>
         <div class="pdm-header-overlay"></div>
         <div class="pdm-header-content">
-          <div class="pdm-title">${esc(deck.name)}</div>
+          <div class="pdm-title-row">
+            <div class="pdm-title" id="pdm-title-text">${esc(deck.name)}</div>
+            ${isOwner ? `<button class="pdm-pencil-btn" id="pdm-rename" title="Rinomina">✏</button>` : ''}
+          </div>
           <div class="pdm-author">${esc(deck.author_username || 'Anonimo')} · ${deck.created_at ? timeAgo(new Date(deck.created_at)) : '—'}</div>
           ${tagsHtml}
         </div>
@@ -260,12 +261,19 @@ function openDeckModal(deck, user) {
             ${buildSection('TERRITORY', deck.territory_cards)}
             ${buildSection('SIDEBOARD', deck.sideboard_cards)}
           </div>
-          ${deck.description ? `<div class="pdm-desc"><div class="pdm-desc-label">DESCRIZIONE</div><div class="pdm-desc-text">${esc(deck.description)}</div></div>` : ''}
+          ${showDescPanel ? `
+            <div class="pdm-desc" id="pdm-desc-panel">
+              <div class="pdm-desc-header">
+                <div class="pdm-desc-label">DESCRIZIONE</div>
+                ${isOwner ? `<button class="pdm-pencil-btn pdm-pencil-btn--sm" id="pdm-edit-desc" title="Modifica descrizione">✏</button>` : ''}
+              </div>
+              <div class="pdm-desc-text" id="pdm-desc-text">${deck.description ? esc(deck.description) : `<span class="pdm-desc-placeholder">Nessuna descrizione. Clicca ✏ per aggiungerne una.</span>`}</div>
+            </div>
+          ` : ''}
         </div>
         <div class="pdm-actions">
           <button class="pdm-btn" id="pdm-export-code">Export code</button>
           <button class="pdm-btn" id="pdm-export-img">Export img</button>
-          ${renameBtn}
           ${deleteBtn}
         </div>
       </div>
@@ -312,6 +320,7 @@ function openDeckModal(deck, user) {
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   document.getElementById('pdm-close').addEventListener('click', close);
 
+  // ── Rinomina (matita vicino al titolo) ───────────────────────
   document.getElementById('pdm-rename')?.addEventListener('click', async () => {
     const newName = prompt('Nuovo nome del mazzo:', deck.name);
     if (!newName || newName.trim() === '' || newName.trim() === deck.name) return;
@@ -321,12 +330,55 @@ function openDeckModal(deck, user) {
       showGlobalToast('Errore durante la rinomina.', 'error');
     } else {
       deck.name = trimmed;
-      const titleEl = overlay.querySelector('.pdm-title');
+      const titleEl = document.getElementById('pdm-title-text');
       if (titleEl) titleEl.textContent = trimmed;
       const local = _decks.find(d => String(d.id) === String(deck.id));
       if (local) local.name = trimmed;
       showGlobalToast(`Mazzo rinominato in "${trimmed}".`, 'success');
     }
+  });
+
+  // ── Modifica descrizione (matita vicino al label) ─────────────
+  document.getElementById('pdm-edit-desc')?.addEventListener('click', () => {
+    const textEl = document.getElementById('pdm-desc-text');
+    if (!textEl) return;
+    const current = deck.description || '';
+
+    textEl.innerHTML = `
+      <textarea class="pdm-desc-textarea" id="pdm-desc-ta" rows="8">${esc(current)}</textarea>
+      <div class="pdm-desc-edit-actions">
+        <button class="pdm-btn pdm-btn-primary" id="pdm-desc-save">Salva</button>
+        <button class="pdm-btn" id="pdm-desc-cancel">Annulla</button>
+      </div>`;
+
+    const ta = document.getElementById('pdm-desc-ta');
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+
+    document.getElementById('pdm-desc-cancel')?.addEventListener('click', () => {
+      textEl.innerHTML = deck.description
+        ? esc(deck.description)
+        : `<span class="pdm-desc-placeholder">Nessuna descrizione. Clicca ✏ per aggiungerne una.</span>`;
+    });
+
+    document.getElementById('pdm-desc-save')?.addEventListener('click', async () => {
+      const newDesc = ta.value.trim();
+      const { error } = await db.from('public_decks').update({ description: newDesc || null }).eq('id', deck.id);
+      if (error) {
+        showGlobalToast('Errore durante il salvataggio.', 'error');
+        return;
+      }
+      deck.description = newDesc || '';
+      const local = _decks.find(d => String(d.id) === String(deck.id));
+      if (local) local.description = deck.description;
+      textEl.innerHTML = deck.description
+        ? esc(deck.description)
+        : `<span class="pdm-desc-placeholder">Nessuna descrizione. Clicca ✏ per aggiungerne una.</span>`;
+      // Aggiorna la classe del modal se la descrizione è stata aggiunta/rimossa
+      const modal = overlay.querySelector('.pdm-modal');
+      if (modal) modal.classList.toggle('pdm-modal--with-desc', !!(deck.description || isOwner));
+      showGlobalToast('Descrizione aggiornata.', 'success');
+    });
   });
 
   document.getElementById('pdm-export-code').addEventListener('click', () => {
@@ -997,12 +1049,78 @@ function injectStyles() {
   gap: 4px;
 }
 
+.pdm-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .pdm-title {
   font-family: 'Cinzel', serif;
   font-size: 22px;
   font-weight: 700;
   color: #fff;
   text-shadow: 0 1px 8px rgba(0,0,0,0.9);
+}
+
+.pdm-pencil-btn {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.20);
+  border-radius: 5px;
+  color: rgba(255,255,255,0.85);
+  font-size: 14px;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.pdm-pencil-btn:hover { background: rgba(255,255,255,0.24); }
+
+.pdm-pencil-btn--sm {
+  background: transparent;
+  border-color: rgba(255,255,255,0.10);
+  font-size: 12px;
+  width: 22px; height: 22px;
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+.pdm-pencil-btn--sm:hover { background: var(--bg-elevated); color: var(--text-primary); }
+
+.pdm-desc-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pdm-desc-placeholder {
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 12px;
+}
+
+.pdm-desc-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.65;
+  padding: 8px 10px;
+  resize: vertical;
+  outline: none;
+  min-height: 120px;
+}
+.pdm-desc-textarea:focus { border-color: var(--violet); }
+
+.pdm-desc-edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .pdm-author {
