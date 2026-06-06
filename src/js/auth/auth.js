@@ -97,8 +97,10 @@ export async function signOut() {
 }
 
 export async function getUser() {
-  const { data: { user } } = await db.auth.getUser();
-  return user;
+  // getSession() reads the in-memory/local session without a network request.
+  // getUser() would validate the JWT server-side and can fail on network issues.
+  const { data: { session } } = await db.auth.getSession();
+  return session?.user ?? null;
 }
 
 export function onAuthChange(callback) {
@@ -116,9 +118,9 @@ export async function saveSettingsToCloud(settings) {
 }
 
 export async function loadSettingsFromCloud() {
-  const { data: { user } } = await db.auth.getUser();
-  if (!user) return null;
-  return user.user_metadata?.rafflesia_settings ?? null;
+  const { data: { session } } = await db.auth.getSession();
+  if (!session?.user) return null;
+  return session.user.user_metadata?.rafflesia_settings ?? null;
 }
 
 export function saveSettings() {
