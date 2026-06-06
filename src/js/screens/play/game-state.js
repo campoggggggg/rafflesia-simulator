@@ -81,8 +81,9 @@ export const GameState = {
   username:     null,   // nome del giocatore locale (impostato prima di entrare)
   oppUsername:  null,   // nome dell'avversario (ricevuto al welcome/deck)
 
-  phase:        "prep",   // "prep"|"start"|"play"|"end"
-  activeRole:   "p1",     // whose turn it is
+  phase:            "prep",   // "prep"|"start"|"play"|"end"
+  activeRole:       "p1",     // whose turn it is
+  awaitingTurnStart: false,   // true after "End Turn", before opponent clicks "Start Turn"
 
   p1: emptyPlayer("p1"),
   p2: emptyPlayer("p2"),
@@ -142,8 +143,8 @@ export function displayName(role) {
 
 export function log(msg) {
   const t = new Date().toLocaleTimeString("en", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  GameState.log.unshift(`[LOG|${t}] ${msg}`);
-  if (GameState.log.length > 60) GameState.log.length = 60;
+  GameState.log.push(`[LOG|${t}] ${msg}`);
+  if (GameState.log.length > 60) GameState.log.shift();
 }
 
 // ── Game setup ────────────────────────────────────────────────
@@ -223,6 +224,11 @@ export function moveCard(instanceId, targetRole, targetZone, faceUp = null) {
     card.counters = 0;
   }
 
+  // Rimuovi la rotazione (sap) quando la carta va al cimitero
+  if (targetZone === "graveyard") {
+    card.rotation = 0;
+  }
+
   addToZone(tgtPlayer, targetZone, card);
 
   log(`${displayName(targetRole)}: ${card.name} moved to ${targetZone}.`);
@@ -248,9 +254,12 @@ export function toggleTurn() {
   const p = getPlayer(newActive);
   [...p.primaryZone, ...p.territoryZone, ...p.tertiaryZone].forEach(c => { c.rotation = 0; });
   if (p.commanderCard) p.commanderCard.rotation = 0;
-  GameState.activeRole = newActive;
-  GameState.phase      = "prep";
+  GameState.activeRole      = newActive;
+  GameState.awaitingTurnStart = false;
+  GameState.phase           = "prep";
   log(`Turn passed to ${displayName(GameState.activeRole)}.`);
+  // Il giocatore che inizia il turno pesca automaticamente una carta
+  drawCard(newActive, true);
 }
 
 export function changeLife(role, delta) {
@@ -270,37 +279,39 @@ export function setLife(role, value) {
 // previous session does not bleed into a new game.
 export function resetGameState() {
   _nextInstanceId = 1;
-  GameState.myRole      = null;
-  GameState.roomKey     = null;
-  GameState.oppUsername = null;
-  GameState.phase       = "prep";
-  GameState.activeRole  = "p1";
-  GameState.p1          = emptyPlayer("p1");
-  GameState.p2          = emptyPlayer("p2");
-  GameState.log         = [];
-  GameState.dragging    = null;
-  GameState.handShown   = false;
-  GameState.showOppHand = false;
+  GameState.myRole            = null;
+  GameState.roomKey           = null;
+  GameState.oppUsername       = null;
+  GameState.phase             = "prep";
+  GameState.activeRole        = "p1";
+  GameState.awaitingTurnStart = false;
+  GameState.p1                = emptyPlayer("p1");
+  GameState.p2                = emptyPlayer("p2");
+  GameState.log               = [];
+  GameState.dragging          = null;
+  GameState.handShown         = false;
+  GameState.showOppHand       = false;
 }
 
 // ── Full state snapshot (for initial sync) ────────────────────
 export function getStateSnapshot() {
   return JSON.parse(JSON.stringify({
-    phase:      GameState.phase,
-    activeRole: GameState.activeRole,
-    p1:         GameState.p1,
-    p2:         GameState.p2,
-    log:        GameState.log,
-    handShown:  GameState.handShown,  // local player's show-hand flag
+    phase:             GameState.phase,
+    activeRole:        GameState.activeRole,
+    awaitingTurnStart: GameState.awaitingTurnStart,
+    p1:                GameState.p1,
+    p2:                GameState.p2,
+    log:               GameState.log,
+    handShown:         GameState.handShown,
   }));
 }
 
 export function applyStateSnapshot(snap) {
-  GameState.phase       = snap.phase;
-  GameState.activeRole  = snap.activeRole;
-  GameState.p1          = snap.p1;
-  GameState.p2          = snap.p2;
-  GameState.log         = snap.log;
-  // The sender's handShown becomes our showOppHand
-  GameState.showOppHand = !!snap.handShown;
+  GameState.phase             = snap.phase;
+  GameState.activeRole        = snap.activeRole;
+  GameState.awaitingTurnStart = snap.awaitingTurnStart ?? false;
+  GameState.p1                = snap.p1;
+  GameState.p2                = snap.p2;
+  GameState.log               = snap.log;
+  GameState.showOppHand       = !!snap.handShown;
 }

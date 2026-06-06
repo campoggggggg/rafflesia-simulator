@@ -23,6 +23,7 @@ const SCREEN_TO_PATH = {
   gamedesign:      "/gamedesign",
   profile:         "/profile",
   match:           "/match",
+  rules:           "/rules",
 };
 
 const PATH_TO_SCREEN = Object.fromEntries(

@@ -27,7 +27,7 @@ let filters  = {
 };
 
 const MAX_MAIN      = 29;
-const MAX_TERRITORY = 12;
+const MAX_TERRITORY = 15;
 const MAX_SIDE      = 10;
 const ALL_COLORS    = ['blue', 'green', 'red', 'black', 'colorless'];
 const COLOR_HEX     = {
@@ -733,9 +733,9 @@ function addCard(card) {
     return;
   }
 
-  // 2. Territory → territorio (nessun limite per carta, solo totale 12)
+  // 2. Territory → territorio (nessun limite per carta, solo totale MAX_TERRITORY)
   if (card.type === 'Territory') {
-    if (deck.territoryCards.length >= MAX_TERRITORY) { showToast('Territory pieno (12/12).'); return; }
+    if (deck.territoryCards.length >= MAX_TERRITORY) { showToast(`Territory pieno (${MAX_TERRITORY}/${MAX_TERRITORY}).`); return; }
     deck.territoryCards.push(card.id);
     saveDecks(); renderDeckPanel(); renderCardList(); return;
   }

@@ -6,9 +6,9 @@
 
 import { GameState, getPlayer, getOpponentRole, displayName } from './game-state.js';
 import { getContextActions, endDrag,
-         setPhase, endTurn, adjustLife,
+         setPhase, endTurn, notifyEndTurn, adjustLife,
          drawOne, playTerritory, addDamage,
-         addCounter }                              from './card-actions.js';
+         addCounter, dblClickSap, setTopCardToSudden } from './card-actions.js';
 import { broadcastSnapshot, broadcastChat }        from './networking.js';
 import { playSound, toggleMute, isMuted }          from './sound.js';
 
@@ -133,6 +133,9 @@ export function renderBoard() {
 
   _attachEvents();
   _renderCtxMenu();
+  // Scroll log to bottom so the latest message is always visible at the bottom
+  const _logEl = document.getElementById("simLogEntries");
+  if (_logEl) _logEl.scrollTop = _logEl.scrollHeight;
 }
 
 // Chiamata quando l'avversario clicca "Show" — apre la finestra con le sue carte
@@ -230,6 +233,19 @@ function _renderTopBar() {
   const isMyTurn = GameState.activeRole === my;
   const phase    = GameState.phase;
   const phases   = ["prep","start","play","end"];
+  const awaiting = GameState.awaitingTurnStart;
+
+  // Bottone fine/inizio turno: tre stati
+  let endTurnBtn;
+  if (awaiting && !isMyTurn) {
+    // È il nostro turno da accettare: "Start Turn" lampeggiante
+    endTurnBtn = `<button class="danger-btn sim-endturn-btn sim-start-turn-btn" id="simEndTurnBtn">Start Turn</button>`;
+  } else if (awaiting && isMyTurn) {
+    // Abbiamo già richiesto la fine del turno, aspettiamo l'avversario
+    endTurnBtn = `<button class="danger-btn sim-endturn-btn" id="simEndTurnBtn" disabled>Waiting…</button>`;
+  } else {
+    endTurnBtn = `<button class="danger-btn sim-endturn-btn" id="simEndTurnBtn" ${!isMyTurn ? "disabled" : ""}>End Turn</button>`;
+  }
 
   return `
     <div class="sim-topbar">
@@ -265,9 +281,7 @@ function _renderTopBar() {
         ${isMyTurn ? "Your Turn" : "Opponent's Turn"}
       </div>
 
-      <button class="danger-btn sim-endturn-btn" id="simEndTurnBtn" ${!isMyTurn ? "disabled" : ""}>
-        End Turn
-      </button>
+      ${endTurnBtn}
 
       <button class="sim-utility-btn sim-undo-btn" id="simUndoBtn" title="Undo last action">↩ Undo</button>
     </div>
@@ -595,14 +609,16 @@ function _renderHandCard(card, role) {
 function _renderCardEl(card, zone, role, forceShowFace = false) {
   const isOwn    = card.owner === GameState.myRole;
   const showFace = forceShowFace || card.faceUp || isOwn;
-  const rotStyle = card.rotation ? `style="transform:rotate(${card.rotation}deg)"` : "";
+  const rot      = card.rotation || 0;
+  const rotClass = rot === 90 ? "sim-card--rotated" : rot === 180 ? "sim-card--rotated-180" : "";
+  const rotStyle = rot ? `style="transform:rotate(${rot}deg)"` : "";
   const typeClass = `sim-card--${card.type}`;
   const showDamage = zone === "primaryZone" && card.type === "minion";
   const dmg = card.damage || 0;
 
   return `
     <div class="sim-card-wrap">
-      <div class="sim-card ${typeClass} ${!showFace ? "sim-card--back" : ""} ${card.rotation ? "sim-card--rotated" : ""}"
+      <div class="sim-card ${typeClass} ${!showFace ? "sim-card--back" : ""} ${rotClass}"
            data-instance="${card.instanceId}"
            data-zone="${zone}"
            data-role="${role}"
@@ -644,7 +660,15 @@ function _attachEvents() {
   });
 
   document.getElementById("simEndTurnBtn")?.addEventListener("click", () => {
-    if (GameState.activeRole === my) endTurn();
+    const awaiting = GameState.awaitingTurnStart;
+    const isMyTurn = GameState.activeRole === my;
+    if (awaiting && !isMyTurn) {
+      // "Start Turn" button: conferma l'inizio del turno
+      endTurn();
+    } else if (!awaiting && isMyTurn) {
+      // "End Turn" button: richiedi fine turno
+      notifyEndTurn();
+    }
   });
 
   document.getElementById("simDrawBtn")?.addEventListener("click", () => {
@@ -809,8 +833,20 @@ function _attachEvents() {
     });
   });
 
+  // Zone giocabili per il sap via doppio click (escludi mano, mazzo, cimitero, esilio, zona coperta)
+  const _sapZones = new Set(["primaryZone", "tertiaryZone", "territoryZone", "commanderCard"]);
+
+  // Card double-click → sap (toggle 0° / 180°)
   // Card right-click → context menu
   document.querySelectorAll("[data-instance]").forEach(el => {
+    el.addEventListener("dblclick", e => {
+      e.stopPropagation();
+      const found = _findCardGlobally(el.dataset.instance);
+      if (!found || found.card.owner !== my) return;
+      if (!_sapZones.has(el.dataset.zone)) return;
+      dblClickSap(el.dataset.instance);
+    });
+
     el.addEventListener("contextmenu", e => {
       e.preventDefault();
       _ctxMenu = { instanceId: el.dataset.instance, zone: el.dataset.zone,
@@ -1157,6 +1193,15 @@ function _showMainDeckCtxMenu(x, y, role) {
   header.className   = "sim-ctx-header";
   header.textContent = "Main Deck";
   menu.appendChild(header);
+
+  const btnSetTop = document.createElement("button");
+  btnSetTop.className   = "sim-ctx-item";
+  btnSetTop.textContent = "Set top card";
+  btnSetTop.addEventListener("click", () => {
+    setTopCardToSudden(role);
+    _removeCtxDOM();
+  });
+  menu.appendChild(btnSetTop);
 
   const btnMill = document.createElement("button");
   btnMill.className   = "sim-ctx-item";

@@ -4,10 +4,7 @@
 
 import { db }           from '../core/supabase-client.js';
 import { CardDatabase, CardMap } from '../data/cards.js';
-import { AppState }     from '../core/state.js';
 import { getUser }      from '../auth/auth.js';
-import { navigateTo }   from '../core/router.js';
-import { saveDeckToSupabase } from '../data/decks.js';
 import { showGlobalToast }    from '../core/ui.js';
 import { openPublicProfile }  from './profile.js';
 
@@ -236,11 +233,15 @@ function openDeckModal(deck, user) {
     ? `<button class="pdm-btn pdm-btn-danger" id="pdm-delete">Rimuovi pubblicazione</button>`
     : '';
 
+  const renameBtn = isOwner
+    ? `<button class="pdm-btn" id="pdm-rename">Modifica nome</button>`
+    : '';
+
   const overlay = document.createElement('div');
   overlay.className = 'pdm-overlay';
   overlay.id = 'pdm-overlay';
   overlay.innerHTML = `
-    <div class="pdm-modal">
+    <div class="pdm-modal ${deck.description ? 'pdm-modal--with-desc' : ''}"
       <div class="pdm-header" style="--pdm-color:${colorHex}">
         <div class="pdm-header-bg" ${commander?.image ? `style="background-image:url('${commander.image}')"` : ''}></div>
         <div class="pdm-header-overlay"></div>
@@ -252,16 +253,19 @@ function openDeckModal(deck, user) {
         <button class="pdm-close" id="pdm-close">✕</button>
       </div>
       <div class="pdm-body">
-        <div class="pdm-list">
-          ${cmdSection}
-          ${buildSection('MAIN DECK', deck.cards)}
-          ${buildSection('TERRITORY', deck.territory_cards)}
-          ${buildSection('SIDEBOARD', deck.sideboard_cards)}
+        <div class="pdm-body-inner">
+          <div class="pdm-list">
+            ${cmdSection}
+            ${buildSection('MAIN DECK', deck.cards)}
+            ${buildSection('TERRITORY', deck.territory_cards)}
+            ${buildSection('SIDEBOARD', deck.sideboard_cards)}
+          </div>
+          ${deck.description ? `<div class="pdm-desc"><div class="pdm-desc-label">DESCRIZIONE</div><div class="pdm-desc-text">${esc(deck.description)}</div></div>` : ''}
         </div>
         <div class="pdm-actions">
-          <button class="pdm-btn pdm-btn-primary" id="pdm-import">Importa nel deck builder</button>
           <button class="pdm-btn" id="pdm-export-code">Export code</button>
           <button class="pdm-btn" id="pdm-export-img">Export img</button>
+          ${renameBtn}
           ${deleteBtn}
         </div>
       </div>
@@ -308,27 +312,21 @@ function openDeckModal(deck, user) {
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   document.getElementById('pdm-close').addEventListener('click', close);
 
-  document.getElementById('pdm-import').addEventListener('click', async () => {
-    const u = await getUser();
-    if (!u) {
-      showGlobalToast('Accedi per importare un mazzo.', 'error');
-      navigateTo('auth');
-      close();
-      return;
+  document.getElementById('pdm-rename')?.addEventListener('click', async () => {
+    const newName = prompt('Nuovo nome del mazzo:', deck.name);
+    if (!newName || newName.trim() === '' || newName.trim() === deck.name) return;
+    const trimmed = newName.trim();
+    const { error } = await db.from('public_decks').update({ name: trimmed }).eq('id', deck.id);
+    if (error) {
+      showGlobalToast('Errore durante la rinomina.', 'error');
+    } else {
+      deck.name = trimmed;
+      const titleEl = overlay.querySelector('.pdm-title');
+      if (titleEl) titleEl.textContent = trimmed;
+      const local = _decks.find(d => String(d.id) === String(deck.id));
+      if (local) local.name = trimmed;
+      showGlobalToast(`Mazzo rinominato in "${trimmed}".`, 'success');
     }
-    const newDeck = {
-      name:           deck.name,
-      commanderId:    deck.commander_id   || null,
-      cards:          deck.cards           || [],
-      territoryCards: deck.territory_cards || [],
-      sideboardCards: deck.sideboard_cards || [],
-    };
-    await saveDeckToSupabase(newDeck);
-    AppState.decks.push(newDeck);
-    AppState.currentDeckId = newDeck.id;
-    showGlobalToast(`"${deck.name}" importato nel tuo deck builder.`, 'success');
-    close();
-    navigateTo('deckbuilder');
   });
 
   document.getElementById('pdm-export-code').addEventListener('click', () => {
@@ -1045,6 +1043,10 @@ function injectStyles() {
 }
 .pdm-close:hover { background: rgba(255,255,255,0.15); }
 
+.pdm-modal--with-desc {
+  max-width: 820px;
+}
+
 .pdm-body {
   display: flex;
   flex-direction: column;
@@ -1052,13 +1054,50 @@ function injectStyles() {
   flex: 1;
 }
 
-.pdm-list {
+.pdm-body-inner {
+  display: flex;
   flex: 1;
+  overflow: hidden;
+}
+
+.pdm-list {
+  flex: 0 0 280px;
   overflow-y: auto;
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  border-right: 1px solid var(--border);
+}
+
+.pdm-modal:not(.pdm-modal--with-desc) .pdm-list {
+  flex: 1;
+  border-right: none;
+}
+
+.pdm-desc {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pdm-desc-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.pdm-desc-text {
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .pdm-section {}

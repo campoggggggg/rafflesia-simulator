@@ -22,6 +22,7 @@ import { renderPublicDeckScreen }     from '../screens/publicdeck.js';
 import { renderGameDesignScreen }    from '../screens/gamedesign.js';
 import { renderProfileScreen }       from '../screens/profile.js';
 import { renderMatchScreen }         from '../screens/match.js';
+import { renderRulesScreen }         from '../screens/rules.js';
 
 async function goToAuthScreen() {
   setNavigationHistory(["auth"]);
@@ -67,7 +68,7 @@ function initNavigation() {
       }
 
       // Schermate con render asincrono — navigateTo prima, poi render
-      const asyncScreens = { publicdeck: renderPublicDeckScreen, gamedesign: renderGameDesignScreen, profile: renderProfileScreen, match: renderMatchScreen };
+      const asyncScreens = { publicdeck: renderPublicDeckScreen, gamedesign: renderGameDesignScreen, profile: renderProfileScreen, match: renderMatchScreen, rules: renderRulesScreen };
       if (asyncScreens[btn.dataset.screen]) {
         _setNavigating(true);
         navigateTo(btn.dataset.screen);
@@ -162,6 +163,7 @@ async function initApp() {
     gamedesign: renderGameDesignScreen,
     profile:    renderProfileScreen,
     match:      renderMatchScreen,
+    rules:      renderRulesScreen,
   };
   if (_lazyRenders[startScreen]) {
     try { await _lazyRenders[startScreen](); } catch (e) { console.error(`render initial ${startScreen}:`, e); }

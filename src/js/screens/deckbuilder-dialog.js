@@ -7,7 +7,7 @@ import { db }                                     from '../core/supabase-client.
 import { showGlobalToast as showToast }           from '../core/ui.js';
 
 const MAX_MAIN      = 29;
-const MAX_TERRITORY = 12;
+const MAX_TERRITORY = 15;
 
 function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -48,9 +48,10 @@ export async function onPublish() {
   if (!deck.sideboardCards)  deck.sideboardCards = [];
 
   const totalCards = (deck.commanderId ? 1 : 0) + deck.cards.length + deck.territoryCards.length;
+  const totalRequired = 1 + MAX_MAIN + MAX_TERRITORY;
   const isComplete = deck.commanderId && deck.cards.length === MAX_MAIN && deck.territoryCards.length === MAX_TERRITORY;
   if (!isComplete) {
-    showToast(`Mazzo incompleto. Servono commander + ${MAX_MAIN} main + ${MAX_TERRITORY} territory (${totalCards}/42).`);
+    showToast(`Mazzo incompleto. Servono commander + ${MAX_MAIN} main + ${MAX_TERRITORY} territory (${totalCards}/${totalRequired}).`);
     return;
   }
 
@@ -58,7 +59,7 @@ export async function onPublish() {
     ? CardMap.get(String(deck.commanderId))
     : null;
 
-  _openPublishDialog(deck.name, async tags => {
+  _openPublishDialog(deck.name, async ({ tags, description }) => {
     const btn = document.getElementById('db-publish');
     if (btn) { btn.disabled = true; btn.textContent = '…'; }
 
@@ -73,6 +74,7 @@ export async function onPublish() {
         territory_cards: deck.territoryCards || [],
         sideboard_cards: deck.sideboardCards || [],
         tags,
+        description:     description        || null,
       });
 
       if (error) throw error;
@@ -100,6 +102,12 @@ function _openPublishDialog(deckName, onOk) {
       <input class="db-fi db-pub-tag-inp" id="db-pub-tag-inp" type="text"
              placeholder="aggiungi tag…" autocomplete="off" style="margin-top:8px;width:100%;box-sizing:border-box;">
       <div class="db-pub-tag-hint" id="db-pub-tag-hint"></div>
+    </div>
+    <div class="db-pub-desc-section" style="margin-top:14px;">
+      <label class="db-fl" style="margin-bottom:6px;display:block;">Descrizione (opzionale)</label>
+      <textarea class="db-fi" id="db-pub-desc-inp" rows="5"
+                placeholder="Descrivi la strategia del tuo mazzo…"
+                style="width:100%;box-sizing:border-box;resize:vertical;font-family:inherit;font-size:13px;line-height:1.5;"></textarea>
     </div>
     <div class="db-dlg-acts">
       <button class="db-btn" id="db-pub-cancel">Annulla</button>
@@ -143,8 +151,9 @@ function _openPublishDialog(deckName, onOk) {
 
   dialog.querySelector('#db-pub-ok').addEventListener('click', () => {
     addTag();
+    const description = dialog.querySelector('#db-pub-desc-inp')?.value.trim() || '';
     _closePublishDialog(dialog, overlay);
-    onOk(currentTags);
+    onOk({ tags: currentTags, description });
   });
   dialog.querySelector('#db-pub-cancel').addEventListener('click', () => {
     _closePublishDialog(dialog, overlay);

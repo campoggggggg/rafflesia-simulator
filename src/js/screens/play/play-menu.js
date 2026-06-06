@@ -180,7 +180,7 @@ function _attachLobbyEvents(deck) {
 
     joinRoom(
       key,
-      () => renderBoard(),
+      () => _showMulliganScreen(() => renderBoard()),
       // onStatus
       msg => {
         _setStatus("joinStatus", msg);
@@ -259,8 +259,10 @@ function _flipCoin(choice) {
 
   const _startGame = (firstRole) => {
     import('./game-state.js').then(({ GameState: GS }) => { GS.activeRole = firstRole; });
-    import('./networking.js').then(({ broadcastSnapshot }) => broadcastSnapshot());
-    renderBoard();
+    _showMulliganScreen(() => {
+      import('./networking.js').then(({ broadcastSnapshot }) => broadcastSnapshot());
+      renderBoard();
+    });
   };
 
   if (won) {
@@ -314,6 +316,135 @@ function _showCopiedToast(anchor) {
 
 function _esc(str) {
   return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// ── Mulligan screen ───────────────────────────────────────────
+
+function _injectMulliganStyles() {
+  if (document.getElementById('mulligan-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'mulligan-styles';
+  s.textContent = `
+    .play-mulligan {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 28px; padding: 48px 24px; min-height: 100vh;
+      background: var(--bg-base, #0d1117);
+    }
+    .play-mulligan-box {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 10px; padding: 18px 36px; text-align: center;
+    }
+    .play-mulligan-title {
+      font-family: 'Cinzel', serif; font-size: 20px; font-weight: 700;
+      color: var(--text-primary);
+    }
+    .play-mulligan-sub {
+      font-size: 13px; color: var(--text-secondary); margin-top: 6px;
+    }
+    .play-mulligan-hand {
+      display: flex; flex-wrap: wrap; gap: 14px;
+      justify-content: center; max-width: 960px;
+    }
+    .play-mulligan-card {
+      position: relative; width: 110px; height: 154px;
+      border-radius: 7px; overflow: hidden; cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.15s, transform 0.12s, box-shadow 0.15s;
+      background: #1a2020;
+    }
+    .play-mulligan-card:hover { transform: translateY(-5px); }
+    .play-mulligan-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .play-mulligan-card--selected {
+      border-color: var(--violet, #7c6f8a);
+      box-shadow: 0 0 14px rgba(155,143,160,0.5);
+    }
+    .play-mulligan-num {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--violet, #7c6f8a); color: #fff;
+      font-size: 30px; font-weight: 900;
+      width: 48px; height: 48px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.7);
+      pointer-events: none;
+    }
+    .play-mulligan-card-back {
+      width: 100%; height: 100%;
+      background: repeating-linear-gradient(
+        45deg, #1a2020, #1a2020 8px, #111818 8px, #111818 16px
+      );
+    }
+    .play-mulligan-confirm { font-size: 15px; padding: 11px 44px; }
+  `;
+  document.head.appendChild(s);
+}
+
+function _showMulliganScreen(onConfirm) {
+  _injectMulliganStyles();
+  const screen  = document.getElementById("screen-play");
+  const my      = GameState.myRole;
+  const myP     = GameState[my];
+  let selected  = []; // instanceIds in mulligan order
+
+  const render = () => {
+    screen.innerHTML = `
+      <div class="play-mulligan">
+        <div class="play-mulligan-box">
+          <div class="play-mulligan-title">Choose cards to mulligan</div>
+          <div class="play-mulligan-sub">(if zero, just confirm)</div>
+        </div>
+        <div class="play-mulligan-hand">
+          ${myP.hand.map(c => {
+            const idx = selected.indexOf(c.instanceId);
+            const sel = idx !== -1;
+            return `
+              <div class="play-mulligan-card ${sel ? 'play-mulligan-card--selected' : ''}"
+                   data-instance="${c.instanceId}">
+                ${c.image
+                  ? `<img src="${c.image}" alt="${_esc(c.name)}" draggable="false">`
+                  : `<div class="play-mulligan-card-back"></div>`}
+                ${sel ? `<div class="play-mulligan-num">${idx + 1}</div>` : ''}
+              </div>`;
+          }).join('')}
+        </div>
+        <button class="primary-btn play-mulligan-confirm" id="mulliganConfirmBtn">Confirm</button>
+      </div>
+    `;
+
+    document.querySelectorAll('.play-mulligan-card').forEach(el => {
+      el.addEventListener('click', () => {
+        const id  = el.dataset.instance;
+        const pos = selected.indexOf(id);
+        if (pos === -1) selected.push(id);
+        else selected.splice(pos, 1);
+        render();
+      });
+    });
+
+    document.getElementById('mulliganConfirmBtn')?.addEventListener('click', () => {
+      const count = selected.length;
+      // Remove selected cards from hand in order → bottom of deck
+      selected.forEach(instanceId => {
+        const idx = myP.hand.findIndex(c => c.instanceId === instanceId);
+        if (idx === -1) return;
+        const [card] = myP.hand.splice(idx, 1);
+        card.zone   = 'deck';
+        card.faceUp = false;
+        myP.deck.push(card);
+      });
+      // Draw replacement cards
+      for (let i = 0; i < count; i++) {
+        if (!myP.deck.length) break;
+        const card  = myP.deck.shift();
+        card.zone   = 'hand';
+        card.faceUp = true;
+        myP.hand.push(card);
+      }
+      onConfirm();
+    });
+  };
+
+  render();
 }
 
 function validateDeck(deck) {

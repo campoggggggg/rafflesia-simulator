@@ -70,6 +70,7 @@ const ACTION_SOUNDS = {
   sapCard:             "button",
   sapMinion:           "button",
   unsapMinion:         "button",
+  dblClickSap:         "button",
   addDamage:           "counter-add",
   addCounter:          "counter-add",
   playTerritory:       "card-play",
@@ -77,9 +78,11 @@ const ACTION_SOUNDS = {
   unsapAllTerritories: "button",
   drawOne:             "card-draw",
   setPhase:            "button",
+  notifyEndTurn:       "button",
   endTurn:             "button",
   adjustLife:          "life-change",
   setLifePoints:       "life-change",
+  setTopCardToSudden:  "card-play",
 };
 
 // ── Undo stack ────────────────────────────────────────────────
@@ -263,6 +266,28 @@ export const unsapMinion = synced("unsapMinion", (instanceId) => {
   log(`${displayName(found.card.owner)} unsapped ${found.card.name}.`);
 });
 
+// Sap via doppio click — toggle 0° ↔ 180°
+export const dblClickSap = synced("dblClickSap", (instanceId) => {
+  const found = findAny(instanceId);
+  if (!found) return;
+  found.card.rotation = found.card.rotation !== 0 ? 0 : 180;
+  const state = found.card.rotation === 0 ? "unsapped" : "sapped";
+  log(`${displayName(found.card.owner)} ${state} ${found.card.name}.`);
+});
+
+// Mette la prima carta del mazzo principale nella zona face-down (sudden)
+export const setTopCardToSudden = synced("setTopCardToSudden", (role) => {
+  const p = GameState[role];
+  if (!p.deck.length) { log(`${displayName(role)}: deck empty!`); return; }
+  if (p.secondaryZone.length >= 3) { log(`${displayName(role)}: face-down zone full (max 3)!`); return; }
+  const card = p.deck.shift();
+  card.zone   = "secondaryZone";
+  card.faceUp = false;
+  card.rotation = 0;
+  p.secondaryZone.push(card);
+  log(`${displayName(role)} set top card face-down.`);
+});
+
 // ── Damage on minions ─────────────────────────────────────────
 
 export const addDamage = synced("addDamage", (instanceId, amount) => {
@@ -338,6 +363,12 @@ export const setPhase = synced("setPhase", (phase) => {
   _setPhase(phase);
 });
 
+// Chiede la fine del turno: mette il flag awaitingTurnStart senza cambiare il turno attivo
+export const notifyEndTurn = synced("notifyEndTurn", () => {
+  GameState.awaitingTurnStart = true;
+});
+
+// Conferma l'inizio del turno: esegue il vero toggle (unsap, cambia role, pesca)
 export const endTurn = synced("endTurn", () => {
   _toggleTurn();
 });

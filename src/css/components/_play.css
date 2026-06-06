@@ -103,6 +103,17 @@
 .sim-turn--mine { background: rgba(59,130,246,0.18); border-color: rgba(59,130,246,0.55); color: #93c5fd; }
 .sim-turn--opp  { background: rgba(239,68,68,0.15);  border-color: rgba(239,68,68,0.40);  color: #fca5a5; }
 .sim-endturn-btn { font-size: 12px; padding: 5px 12px; }
+
+@keyframes sim-blink-turn {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(59,130,246,0.60); }
+  50%       { opacity: 0.55; box-shadow: none; }
+}
+.sim-start-turn-btn {
+  animation: sim-blink-turn 0.85s ease-in-out infinite;
+  border-color: rgba(59,130,246,0.70) !important;
+  background: rgba(59,130,246,0.18) !important;
+  color: #93c5fd !important;
+}
 .sim-mute-btn {
   background: transparent; border: 0.5px solid var(--border); border-radius: 5px;
   color: var(--text-secondary); font-size: 15px; padding: 3px 8px; cursor: pointer;
@@ -286,6 +297,7 @@
   flex: 1;
   align-items: center;
   flex-wrap: nowrap;
+  padding-left: 8px; /* spazio extra così la prima carta sappata non viene tagliata a sinistra */
 }
 .sim-zone-cards--horiz::-webkit-scrollbar { height: 3px; }
 .sim-zone-cards--horiz::-webkit-scrollbar-thumb { background: rgba(110,88,89,0.35); border-radius: 2px; }
@@ -370,12 +382,14 @@
 }
 
 /* Commander: riempie tutta la colonna sinistra del half (mostra la carta per intero) */
+/* align-items: flex-end sposta la carta verso destra così quando è sappata non viene coperta */
 .sim-zone--commander {
   width: 100%;
   flex: 1;
   min-height: 0;
   justify-content: flex-start;
   overflow: hidden;
+  align-items: flex-end;
 }
 
 /* Territory Deck: nella fascia territorio, width fissa */
@@ -476,6 +490,8 @@
 }
 .sim-card--rotated { transform: rotate(90deg); }
 .sim-card--rotated:hover { transform: rotate(90deg) translateY(-3px); }
+.sim-card--rotated-180 { transform: rotate(180deg); }
+.sim-card--rotated-180:hover { transform: rotate(180deg) translateY(-3px); }
 
 .sim-card-img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; display: block; }
 
