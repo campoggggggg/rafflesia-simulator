@@ -241,7 +241,7 @@ function openDeckModal(deck, user) {
   overlay.className = 'pdm-overlay';
   overlay.id = 'pdm-overlay';
   overlay.innerHTML = `
-    <div class="pdm-modal ${deck.description ? 'pdm-modal--with-desc' : ''}"
+    <div class="pdm-modal ${deck.description ? 'pdm-modal--with-desc' : ''}">
       <div class="pdm-header" style="--pdm-color:${colorHex}">
         <div class="pdm-header-bg" ${commander?.image ? `style="background-image:url('${commander.image}')"` : ''}></div>
         <div class="pdm-header-overlay"></div>

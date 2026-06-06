@@ -62,7 +62,7 @@ export function renderPlayScreen() {
           <strong>${currentDeck.name}</strong>
           — Commander: ${currentDeck.commanderId ?? "none"}
           &nbsp;| Main: ${currentDeck.cards.length}/29
-          &nbsp;| Territory: ${(currentDeck.territoryCards ?? []).length}/12
+          &nbsp;| Territory: ${(currentDeck.territoryCards ?? []).length}/15
         </div>
       `}
 
@@ -452,7 +452,7 @@ function validateDeck(deck) {
   if (!deck)                                issues.push("No deck selected.");
   if (deck && !deck.commanderId)            issues.push("Missing commander.");
   if (deck && deck.cards.length !== 29)     issues.push(`Main deck must have exactly 29 cards (has ${deck?.cards?.length ?? 0}).`);
-  if (deck && (deck.territoryCards ?? []).length !== 12)
-    issues.push(`Territory deck must have exactly 12 cards (has ${(deck?.territoryCards ?? []).length}).`);
+  if (deck && (deck.territoryCards ?? []).length !== 15)
+    issues.push(`Territory deck must have exactly 15 cards (has ${(deck?.territoryCards ?? []).length}).`);
   return issues;
 }
