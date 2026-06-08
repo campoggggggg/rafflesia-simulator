@@ -2,7 +2,7 @@
 // auth/auth.js — Autenticazione via Supabase Auth.
 // ============================================================
 
-import { db } from '../core/supabase-client.js';
+import { db, REMEMBER_ME_KEY } from '../core/supabase-client.js';
 import { AppState } from '../core/state.js';
 
 // Utente corrente — aggiornato da onAuthChange che è sempre il primo
@@ -40,8 +40,11 @@ export async function signUp(email, password, username) {
 // Login con email oppure username.
 // Se l'input non contiene "@" lo trattiamo come username
 // e cerchiamo l'email nella colonna `email` di profiles (salvata alla signup).
-// Se rememberMe = false, i token vengono spostati in sessionStorage dopo il login
-// così non sopravvivono alla chiusura del browser.
+// rememberMe decide DOVE il client Supabase salverà i token (vedi hybridAuthStorage
+// in supabase-client.js): localStorage (sopravvive alla chiusura) o sessionStorage
+// (solo per la scheda corrente). Il flag va impostato PRIMA del login così
+// l'adapter scrive subito nel posto giusto, senza spostare token a posteriori
+// (operazione che generava SIGNED_OUT spuri e svuotava i mazzi caricati).
 export async function signIn(emailOrUsername, password, rememberMe = false) {
   let email = emailOrUsername.trim();
 
@@ -57,19 +60,10 @@ export async function signIn(emailOrUsername, password, rememberMe = false) {
     email = data;
   }
 
+  localStorage.setItem(REMEMBER_ME_KEY, rememberMe ? 'true' : 'false');
+
   const { data, error } = await db.auth.signInWithPassword({ email, password });
   if (error) throw error;
-
-  if (!rememberMe) {
-    // Sposta i token Supabase dal localStorage al sessionStorage.
-    // Il client continua a funzionare ma la sessione non sopravvive alla chiusura del browser.
-    const STORAGE_KEY = 'sb-rxsvogebmhmjlixxdoep-auth-token';
-    const token = localStorage.getItem(STORAGE_KEY);
-    if (token) {
-      sessionStorage.setItem(STORAGE_KEY, token);
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  }
 
   return data;
 }
@@ -96,7 +90,7 @@ export async function ensureProfile(user) {
 }
 
 export async function signOut() {
-  localStorage.removeItem('rafflesia_remember_me');
+  localStorage.removeItem(REMEMBER_ME_KEY);
   const { error } = await db.auth.signOut();
   if (error) throw error;
 }
